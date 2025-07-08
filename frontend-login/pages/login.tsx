@@ -13,13 +13,19 @@ export default function loginpage() {
 
     const forlogin= async () => {
         try{
-            const response= await axios.post("http://localhost:8000/login", {
-                email,
-                password,
-            });
+            const formData = new URLSearchParams();
+            formData.append("username", email);
+            formData.append("password", password);
 
-            const {token} = response.data;
-            localStorage.setItem("token", token);
+            const response = await axios.post("http://localhost:8000/auth/login", formData, {
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+});
+
+
+            const {access_token} = response.data;
+            localStorage.setItem("token", access_token);
             router.push("/dashboard");
         } catch (err: any) {
             alert("Login failed: "+ err.response?.data?.detail || err.message);
@@ -35,7 +41,7 @@ export default function loginpage() {
                 </h1>
                 <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
                 <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
-                <button onClick={forlogin} className="w-full px-8 py-3 bg-blue-850 bg-opacity-20 hover:bg-blue-900 text-white text-lg rounded-lg transition">Continue</button>
+                <button onClick={forlogin} className="w-full px-8 py-3 bg-blue-800 bg-opacity-20 hover:bg-blue-900 text-white text-lg rounded-lg transition">Continue</button>
             </div>
         </div>
     );
