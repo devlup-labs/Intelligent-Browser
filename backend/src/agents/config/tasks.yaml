@@ -1,0 +1,52 @@
+# yaml files are readeable format like json and simpler as compared to it also indentation based
+# > will ignnore line breaks side by side , | maintians exact same formatting 
+planner_task:
+  agent: planner_agent
+  description: >
+    Analyze the {{user_request}} and create a structured multi-agent plan using only the allowed agent list.
+    Follow the format and reasoning style shown in the example outputs. Do not invent agent names. 
+    The output must include a thought process, a task name, agent assignments, and dependency structure. 
+    You must also format the `nodes` correctly using input/output/foreach/watch blocks where applicable.
+    The output language should follow the language corresponding to the user's task.
+    Only use agents from this list: {{agents_list}}
+
+    Refer to the examples from the following list: 
+    {{examples_list}}
+    
+    
+
+  expected_output: |
+    A JSON-like dictionary following the structure:
+    {
+        "root": {
+            "name": "Task Name",
+            "thought": "Your thought process on user demand planning",
+            "agents": [
+                {
+                    "name": "Agent name",
+                    "id": 0,
+                    "dependsOn": "",
+                    "task": "current agent task",
+                    "nodes": [
+                        "Complete the corresponding step nodes of the task",
+                        {"input": "variable name", "description": "..."},
+                        {"output": "variable name", "description": "..."},
+                        {"forEach": "list or variable name", "steps": ["forEach step node"]},
+                        {
+                            "watch": {
+                                "event": "dom",
+                                "loop": True,
+                                "description": "Monitor task description",
+                                "trigger": ["Trigger step node"]
+                            }
+                        }
+                    ]
+                      
+                }
+            ]
+        }
+    }
+  input_variables:
+    - user_request
+    - agents_list
+    - examples_list
