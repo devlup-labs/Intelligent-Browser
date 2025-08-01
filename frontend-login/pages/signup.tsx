@@ -13,6 +13,9 @@ export default function signuppage() {
         email: "",
         password: "",
     });
+
+    const [loading, setLoading] = useState(false);
+
     
     const handleChange= (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm({...form, [e.target.name]: e.target.value});
@@ -34,7 +37,10 @@ export default function signuppage() {
         }
         catch (err) {
             console.error(err);
-            alert("Signup failed!");
+            const errorMessage = err.response?.data?.detail || "Singup failed";
+            alert(errorMessage);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -44,9 +50,9 @@ export default function signuppage() {
                 <h1 className="text-3xl font-bold text-center"> Create an Account
                 </h1>
                 <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-                    <input type="text" name="username" placeholder="Username" value={form.username} onChange={handleChange} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
-                <input type="email" placeholder="Email" name="email" value={form.email} onChange={handleChange} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
-                <input type="password" placeholder="Password" name="password" value={form.password} onChange={handleChange} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
+                    <input type="text" name="username" placeholder="Username" value={form.username} onChange={handleChange} required className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
+                <input type="email" placeholder="Email" name="email" value={form.email} onChange={handleChange} required className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
+                <input type="password" placeholder="Password" name="password" value={form.password} required onChange={handleChange} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
                 <button type="submit" className="w-full px-8 py-3 bg-blue-800 bg-opacity-20 hover:bg-blue-900 text-white text-lg rounded-lg transition">Continue</button>
             </form>
             </div>
