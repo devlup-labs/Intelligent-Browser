@@ -52,13 +52,14 @@ planner_task:
     - examples_list
 
 execution_task:
-  description: >
+    agent: executor_agent
+    description: >
     Execute a single step provided by the planner agent. Focus on completing
     only the current step without looking ahead to future steps. Use available
     tools and resources to accomplish the specific objective. Provide clear
     feedback on the execution result to help the planner adapt subsequent steps.
   
-  expected_output: >
+    expected_output: >
     A concise execution result in the following format:
     
     STATUS: [SUCCESS/FAILURE/PARTIAL_FAILURE]
@@ -81,12 +82,12 @@ execution_task:
     
     Keep the response focused and actionable for planner feedback.
   
-  context_from_planner: true
-  allow_delegation: false
-  human_input: false
-  max_execution_time: 30
+    context_from_planner: true
+    allow_delegation: false
+    human_input: false
+    max_execution_time: 30
   
-  output_json: |
+    output_json: |
     {
       "status": "SUCCESS|FAILURE|PARTIAL_FAILURE",
       "step_description": "brief description of attempted step",
@@ -97,7 +98,7 @@ execution_task:
       "next_step_context": "any important context for the next step"
     }
   
-  validation_criteria:
+    validation_criteria:
     - "Single step execution attempted"
     - "Clear status provided (SUCCESS/FAILURE/PARTIAL_FAILURE)"
     - "Appropriate feedback given for planner adaptation"
