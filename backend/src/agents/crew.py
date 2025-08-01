@@ -29,10 +29,11 @@ class PlannerCrew:
     def __init__(self):
         # Load YAML files into dictionaries
         try:
-            with open("config/agents.yaml", 'r') as file:
+            config_dir = os.path.join(os.path.dirname(__file__), "config")
+            with open(os.path.join(config_dir, "agents.yaml"), 'r') as file:
                 self.agents_config = yaml.safe_load(file)
             
-            with open("config/tasks.yaml", 'r') as file:
+            with open(os.path.join(config_dir, "tasks.yaml"), 'r') as file:
                 self.tasks_config = yaml.safe_load(file)
             logger.debug(self.agents_config)
             logger.debug(self.tasks_config)

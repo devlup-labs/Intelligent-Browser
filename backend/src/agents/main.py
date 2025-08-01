@@ -1,4 +1,4 @@
-from crew import PlannerCrew
+from backend.src.agents.crew import PlannerCrew
 import json
 from examples.planner_agent_example import planner_examples_list
 
@@ -12,6 +12,14 @@ example_list_json=json.dumps(planner_examples_list,indent=2)
 # print(example_list_json)
 
 def run():
+    try:
+        user_request=input("Ask me anything!! ---> ")
+        if not user_request.strip():
+            print("User request cannot be empty. Please provide a valid request.")
+            return
+    except Exception as e:
+        print(f"An error occurred while reading user input: {e}")
+        return
     inputs = {
         "user_request":user_request,
         "agents_list":agent_list,

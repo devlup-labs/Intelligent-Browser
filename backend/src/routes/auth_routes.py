@@ -1,5 +1,4 @@
 from fastapi import APIRouter,Depends,HTTPException,status
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session #database a session create karne ke liye (ek tarah se ye type hai db session ka)
 from fastapi.security import OAuth2PasswordRequestForm # (form-data lane ke liye)
 #  OAuth2AuthorizationCodeBearer: Used for third-party OAuth2 flows like Google, GitHub, etc.
