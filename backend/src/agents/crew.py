@@ -1,13 +1,12 @@
 from crewai import Crew, Agent, Process, Task, LLM
 import os
-from crewai.project import CrewBase, agent, tool, crew, task
+from crewai.project import CrewBase, agent, crew, task
 import yaml
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-print(os.getenv("GEMINI_API_KEY"))
 try:
     # Use CrewAI's native LLM class instead of LangChain
     llm = LLM(
@@ -15,9 +14,9 @@ try:
         api_key=os.getenv("GEMINI_API_KEY"),
         temperature=0.7
     )
-    print("CrewAI LLM initialized successfully")
+    logger.info("CrewAI LLM initialized successfully")
 except Exception as e:
-    print(f"LLM initialization failed: {e}")
+    logger.error(f"LLM initialization failed: {e}")
     raise
 
 # Declares a full crewai project and collects and links @agent, @task, @crew
@@ -29,13 +28,20 @@ class PlannerCrew:
 
     def __init__(self):
         # Load YAML files into dictionaries
-        with open("config/agents.yaml", 'r') as file:
-            self.agents_config = yaml.safe_load(file)
-        
-        with open("config/tasks.yaml", 'r') as file:
-            self.tasks_config = yaml.safe_load(file)
-    print(self.agents_config)
-    print(self.tasks_config)
+        try:
+            with open("config/agents.yaml", 'r') as file:
+                self.agents_config = yaml.safe_load(file)
+            
+            with open("config/tasks.yaml", 'r') as file:
+                self.tasks_config = yaml.safe_load(file)
+            logger.debug(self.agents_config)
+            logger.debug(self.tasks_config)
+        except FileNotFoundError as e:
+            logger.error(f"Configuration file not found: {e}")
+            raise
+        except yaml.YAMLError as e:
+            logger.error(f"Error parsing YAML file: {e}")
+            raise
 
     #this is actual agent name not the one used in agents that is just for reference
     @agent
@@ -60,14 +66,14 @@ class PlannerCrew:
     def planner_task(self) -> Task:
         return Task(
             config=self.tasks_config["planner_task"],
-            agents=self.planner_agent()
+            agent=self.planner_agent()
         )
     
     @task
     def execution_task(self) -> Task:
         return Task(
             config=self.tasks_config["execution_task"],
-            agents=self.executor_agent(),
+            agent=self.executor_agent(),
             # This makes the executor wait for the planner's output
             context=[self.planner_task()]  
         )
@@ -82,7 +88,3 @@ class PlannerCrew:
             process=Process.sequential,
             verbose=True
         )
-
-
-
-    
