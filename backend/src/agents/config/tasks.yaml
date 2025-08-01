@@ -3,53 +3,110 @@
 planner_task:
   agent: planner_agent
   description: >
-    Analyze the {{user_request}} and create a structured multi-agent plan using only the allowed agent list.
-    Follow the format and reasoning style shown in the example outputs. Do not invent agent names. 
-    The output must include a thought process, a task name, agent assignments, and dependency structure. 
-    You must also format the `nodes` correctly using input/output/foreach/watch blocks where applicable.
-    The output language should follow the language corresponding to the user's task.
-    Only use agents from this list: {{agents_list}}
+    You are a strategic task planner that works iteratively with an executor agent. 
+    For the given {{user_request}}, you will:
 
-    Refer to the examples from the following list: 
-    {{examples_list}}
+    ////////////////////
+     Previous executor results are provided in your context.
+    Use the execution_feedback to understand what was completed.
     
+    Last execution status: {{execution_feedback.status}}
+    What happened: {{execution_feedback.result_summary}}
+    Executor suggestions: {{execution_feedback.suggestions_for_planner}}
+    /////////////////////
     
+    1. FIRST CALL: Analyze the overall request and provide the master plan overview
+    2. SUBSEQUENT CALLS: Generate ONE specific task at a time based on:
+       - Previous execution results from executor (if any)
+       - Current progress state
+       - What needs to be done next
+    
+    Use ONLY agents from this list: {{agents_list}}
+    
+    Context from previous execution: {{execution_feedback}}
+    Current progress: {{progress_state}}
+    
+    Your response should adapt based on the execution_feedback:
+    - If SUCCESS: Use result_summary and next_step_context to plan next logical step
+    - If FAILURE: Use error_details and suggestions_for_planner to adjust approach
+    - If PARTIAL_FAILURE: Use next_step_context to continue from current state
+    - Always incorporate outputs_created into subsequent task planning
+    
+    Reference examples: {{examples_list}}
 
   expected_output: |
-    A JSON-like dictionary following the structure:
+    Generate output in this exact JSON format:
+    
+    For FIRST CALL (when no execution_feedback provided):
     {
-        "root": {
-            "name": "Task Name",
-            "thought": "Your thought process on user demand planning",
-            "agents": [
+        "session_type": "INITIAL_PLANNING",
+        "overall_task_name": "Complete descriptive name for the entire user request",
+        "master_thought": "Your comprehensive analysis of the user request and high-level approach",
+        "estimated_steps": "Rough estimate of how many major steps this will take",
+        "current_task": {
+            "task_name": "Specific name for the first task to execute",
+            "task_id": 1,
+            "agent_name": "Agent name from agents_list",
+            "task_thought": "Your reasoning for why this task comes first and how it fits the overall plan",
+            "task_description": "Clear, detailed description of what needs to be accomplished in this specific task",
+            "subtasks": [
+                "Step 1: Detailed action item",
+                "Step 2: Another specific action",
+                "Step 3: etc...",
                 {
-                    "name": "Agent name",
-                    "id": 0,
-                    "dependsOn": "",
-                    "task": "current agent task",
-                    "nodes": [
-                        "Complete the corresponding step nodes of the task",
-                        {"input": "variable name", "description": "..."},
-                        {"output": "variable name", "description": "..."},
-                        {"forEach": "list or variable name", "steps": ["forEach step node"]},
-                        {
-                            "watch": {
-                                "event": "dom",
-                                "loop": True,
-                                "description": "Monitor task description",
-                                "trigger": ["Trigger step node"]
-                            }
-                        }
-                    ]
-                      
+                    "input": "variable_name",
+                    "description": "What input data is needed"
+                },
+                {
+                    "output": "variable_name", 
+                    "description": "What output this task should produce"
+                },
+                {
+                    "forEach": "list_variable",
+                    "steps": ["Action for each item in the list"]
                 }
-            ]
+            ],
+            "expected_outputs": "What specific outputs/results this task should produce"
         }
     }
+    
+    For SUBSEQUENT CALLS (when execution_feedback is provided):
+    {
+        "session_type": "ITERATIVE_PLANNING",
+        "overall_task_name": "Same as initial planning",
+        "progress_analysis": "Analysis based on executor's result_summary and what has been completed",
+        "adaptation_reasoning": "How you're adapting based on executor's suggestions_for_planner and error_details",
+        "current_task": {
+            "task_name": "Name for the next task",
+            "task_id": "Sequential number",
+            "agent_name": "Agent name from agents_list",
+            "depends_on_previous": "How this task builds on previous execution results",
+            "task_thought": "Reasoning for this next step",
+            "task_description": "What needs to be done now",
+            "subtasks": [
+                "Step based on executor's next_step_context",
+                "Utilize files from outputs_created: {{execution_feedback.outputs_created}}",
+                "Address any issues from error_details if status was not SUCCESS",
+                "Follow suggestions from suggestions_for_planner"
+            ],
+            "expected_outputs": "What this task should produce"
+        },
+        "remaining_work": "Estimate of what still needs to be done after this task"
+    }
+
   input_variables:
     - user_request
-    - agents_list
+    - agents_list  
     - examples_list
+    - execution_feedback  # JSON from executor agent (empty on first call)
+    - progress_state      # Summary of what's been accomplished so far
+
+  validation_criteria:
+    - "Single task generated per call"
+    - "Clear task breakdown with subtasks"
+    - "Appropriate agent selected from provided list"
+    - "Builds logically on previous execution results"
+    - "Adapts to executor feedback appropriately"
 
 execution_task:
     agent: executor_agent
@@ -62,7 +119,7 @@ execution_task:
     expected_output: >
       A concise execution result in the following format:
     
-      STATUS: [SUCCESS/FAILURE/PARTIAL_FAILURE]
+      STATUS: [SUCCESS/FAILURE/]
     
       For SUCCESS status:
       - Brief confirmation of task completion
@@ -88,15 +145,15 @@ execution_task:
     max_execution_time: 30
 
     output_json: |
-    {
-      "status": "SUCCESS|FAILURE|PARTIAL_FAILURE",
-      "step_description": "brief description of attempted step",
-      "result_summary": "concise summary of what happened",
-      "error_details": "detailed explanation if status is not SUCCESS",
-      "suggestions_for_planner": "recommendations for next step adaptation",
-      "outputs_created": ["list of any files/results produced"],
-      "next_step_context": "any important context for the next step"
-    }
+        {
+        "status": "SUCCESS|FAILURE|PARTIAL_FAILURE",
+        "step_description": "brief description of attempted step",
+        "result_summary": "concise summary of what happened",
+        "error_details": "detailed explanation if status is not SUCCESS",
+        "suggestions_for_planner": "recommendations for next step adaptation",
+        "outputs_created": ["list of any files/results produced"],
+        "next_step_context": "any important context for the next step"
+        }
   
     validation_criteria:
       - "Single step execution attempted"

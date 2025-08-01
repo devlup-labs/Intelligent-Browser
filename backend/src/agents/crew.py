@@ -26,12 +26,14 @@ except Exception as e:
 # Without this manually sab crew ko batana padega
 # 📦 Under the hood, it probably collects all decorated methods and makes them accessible as .agents, .tasks, and .crew().
 @CrewBase
-class PlannerCrew:
+class MasterCrew:
     """Planner Crew"""
 
     def __init__(self, page: Page):
-        # Load YAML files into dictionaries
+      
         self.browser_manager = BrowserManager()
+        self.execution_history=[] #track iterations
+
         try:
             config_dir = os.path.join(os.path.dirname(__file__), "config")
             with open(os.path.join(config_dir, "agents.yaml"), 'r') as file:
@@ -60,7 +62,7 @@ class PlannerCrew:
             logger.error(f"Error parsing YAML file: {e}")
             raise
 
-    #this is actual agent name not the one used in agents that is just for reference
+    
     @agent
     def planner_agent(self) -> Agent:
         return Agent(
@@ -76,6 +78,7 @@ class PlannerCrew:
             config=self.agents_config["executor"],
             tools=[self.goto_page_tool],
             llm=llm,
+            
             verbose=True,
         )
     
@@ -83,7 +86,11 @@ class PlannerCrew:
     def planner_task(self) -> Task:
         return Task(
             config=self.tasks_config["planner_task"],
-            agent=self.planner_agent()
+            agent=self.planner_agent(),
+            context={
+                "execution_feedback": self.execution_history[-1] if self.execution_history else None,
+                "iteration":len(self.execution_history)
+            }   
         )
     
     @task
@@ -91,17 +98,66 @@ class PlannerCrew:
         return Task(
             config=self.tasks_config["execution_task"],
             agent=self.executor_agent(),
-            # This makes the executor wait for the planner's output
             context=[self.planner_task()]  
         )
     
     @crew
     def crew(self) -> Crew:
-        # print("helloL",self.agents)
+
         return Crew(
-            # self.agents / self.tasks automatically created when decorators are used
+         
             agents=self.agents, 
             tasks=self.tasks,
             process=Process.sequential,
-            verbose=True
+            verbose=True,
+            memory=True #creates a shared memory space between agents so that they can communicate  
         )
+    
+    def run_iterative_planner_executor(self,user_request,max_iterations=10):
+        """It will run Planner and Executor iteratively"""
+
+        for iteration in range(max_iterations):
+            logger.info(f"Starting iteration {iteration+1}")
+
+            self.update_planner_description(user_request,iteration)
+
+            result=self.crew().kickoff()
+
+            executor_output=result.tasks_output[-1] #give you last task ka output which is executor one
+            self.execution_history.append(executor_output.json_dict)
+
+            # TODO : Need to think how it needs to end
+
+            
+
+    def update_planner_description(self,user_request,iteration):
+        """Update the planner description based on the no of iteration with executor feedback"""
+        last_execution = self.execution_history[-1] if self.execution_history else None
+
+        og_desciption=self.tasks_config["planner_task"]["description"]
+
+        if(iteration==0):   #means first iteration
+            self.tasks_config["planner_task"]["description"]=f"""
+            {og_desciption}
+
+            USER REQUEST: {user_request}
+            This is the FIRST CALL
+            """
+        else:
+            self.tasks_config["planner_task"]["description"]=f"""
+
+            {og_desciption}
+            
+            USER REQUEST: {user_request}
+            ITERATION: {iteration + 1}
+            
+            Previous execution details:
+            - Status: {last_execution.get('status', 'Unknown')}
+            - Result Summary: {last_execution.get('result_summary', 'No summary')}
+            - Error Details: {last_execution.get('error_details', 'None')}
+            - Suggestions: {last_execution.get('suggestions_for_planner', 'None')}
+            - Next Step Context: {last_execution.get('next_step_context', 'None')}
+            - Outputs Created: {last_execution.get('outputs_created', [])}
+
+            """
+        
