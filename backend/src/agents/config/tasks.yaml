@@ -50,3 +50,56 @@ planner_task:
     - user_request
     - agents_list
     - examples_list
+
+execution_task:
+    agent: executor_agent
+    description: >
+        Execute a single step provided by the planner agent. Focus on completing
+        only the current step without looking ahead to future steps. Use available
+        tools and resources to accomplish the specific objective. Provide clear
+        feedback on the execution result to help the planner adapt subsequent steps.
+  
+    expected_output: >
+        A concise execution result in the following format:
+        
+        STATUS: [SUCCESS/FAILURE/PARTIAL_FAILURE]
+        
+        For SUCCESS status:
+        - Brief confirmation of task completion
+        - Key outputs or results achieved
+        
+        For FAILURE status:
+        - Clear explanation of what went wrong
+        - Specific error details or obstacles encountered
+        - What was attempted before failure
+        - Suggestions for the planner to modify the approach
+        
+        For PARTIAL_FAILURE status:
+        - What parts were completed successfully
+        - What parts failed and why
+        - Current state of the task
+        - What the planner should adjust for the next step
+        
+        Keep the response focused and actionable for planner feedback.
+    
+        context_from_planner: true
+        allow_delegation: false
+        human_input: false
+        max_execution_time: 30
+  
+        output_json: |
+        {
+        "status": "SUCCESS|FAILURE|PARTIAL_FAILURE",
+        "step_description": "brief description of attempted step",
+        "result_summary": "concise summary of what happened",
+        "error_details": "detailed explanation if status is not SUCCESS",
+        "suggestions_for_planner": "recommendations for next step adaptation",
+        "outputs_created": ["list of any files/results produced"],
+        "next_step_context": "any important context for the next step"
+        }
+  
+    validation_criteria:
+        - "Single step execution attempted"
+        - "Clear status provided (SUCCESS/FAILURE/PARTIAL_FAILURE)"
+        - "Appropriate feedback given for planner adaptation"
+        - "Response is concise and actionable"
