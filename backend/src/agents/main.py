@@ -1,34 +1,36 @@
-from backend.src.agents.crew import PlannerCrew
+import asyncio 
+from crew import PlannerCrew
 import json
 from examples.planner_agent_example import planner_examples_list
+from utils.browser_manager import BrowserManager
 
-# existing list 
-user_request=input("Ask me anything!! ---> ")
+async def run(): 
+    user_request = input("Ask me anything!! ---> ")
+    agent_list = ["Chat", "Browser", "Computer", "File"]
+    example_list_json = json.dumps(planner_examples_list, indent=2)
 
-# imp that it be a string since used in description
-agent_list=["Chat","Browser","Computer","File"]
-
-example_list_json=json.dumps(planner_examples_list,indent=2)
-# print(example_list_json)
-
-def run():
-    try:
-        user_request=input("Ask me anything!! ---> ")
-        if not user_request.strip():
-            print("User request cannot be empty. Please provide a valid request.")
-            return
-    except Exception as e:
-        print(f"An error occurred while reading user input: {e}")
-        return
     inputs = {
-        "user_request":user_request,
-        "agents_list":agent_list,
-        "examples_list":example_list_json,
+        "user_request": user_request,
+        "agents_list": agent_list,
+        "examples_list": example_list_json,
     }
 
-    result=PlannerCrew().crew().kickoff(inputs=inputs)
-    print(result)
+    browser_manager = BrowserManager()
+    
+    try:
+        page = await browser_manager.start()
 
+        my_crew = PlannerCrew(page=page)
+        
+        result = my_crew.crew().kickoff(inputs=inputs)
+        
+        print("\n\n########################")
+        print("## Here is the result")
+        print("########################\n")
+        print(result)
+    finally:
+        print("Closing browser...")
+        await browser_manager.close()
 
-if(__name__=="__main__"):
-    run()
+if __name__ == "__main__":
+    asyncio.run(run())

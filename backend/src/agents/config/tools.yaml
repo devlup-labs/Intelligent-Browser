@@ -1,0 +1,6 @@
+goto_page_tool:
+  name: "Navigate To URL"
+  description: >-
+    A tool to navigate a web browser to a specific URL. 
+    Use this when you need to visit a webpage.
+    The input must be a single, complete URL.
