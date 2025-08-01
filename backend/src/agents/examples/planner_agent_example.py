@@ -1,4 +1,5 @@
-planner_examples_list=[
+from typing import List, Dict, Any, Union
+planner_examples_list: List[Dict[str, Union[str, Dict[str, Any]]]] = [
         {
             "user_request": "hello.",
             "OutputResult": {
