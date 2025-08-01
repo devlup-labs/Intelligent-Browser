@@ -59,7 +59,7 @@ def signup(user:schema.UserCreateSignup,db:Session=Depends(get_db)): # get_db da
 #NOTE:OAuth2PasswordRequestForm internally needs username and password only to agar email bhi bhejna hai under username hi bhejna padega in frontend
 @authRouter.post("/login",response_model=schema.Token)
 def login(form_data:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
-    print(form_data)
+
 
     if not form_data.username.strip() or not form_data.password.strip():
         raise HTTPException(
