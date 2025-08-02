@@ -10,6 +10,11 @@ from playwright.async_api import Page
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Validate API key exists
+if not os.getenv("GEMINI_API_KEY"):
+    raise ValueError("GEMINI_API_KEY environment variable is not set")
+
+
 try:
     # Use CrewAI's native LLM class instead of LangChain
     llm = LLM(
@@ -42,7 +47,7 @@ class MasterCrew:
             with open(os.path.join(config_dir, "tasks.yaml"), 'r') as file:
                 self.tasks_config = yaml.safe_load(file)
 
-            with open("config/tools.yaml", 'r') as file:
+            with open(os.path.join(config_dir, "tools.yaml"), 'r') as file:
                 self.tools_config = yaml.safe_load(file)
 
 
@@ -80,6 +85,7 @@ class MasterCrew:
             llm=llm,
             
             verbose=True,
+
         )
     
     @task
@@ -127,6 +133,13 @@ class MasterCrew:
             self.execution_history.append(executor_output.json_dict)
 
             # TODO : Need to think how it needs to end
+            if(executor_output.json_dict.get("status")=='SUCCESS'):
+                success_keywords=['completed', 'finished', 'done', 'successful']
+                result_summary=executor_output.json_dict.get('result_summary','').lower()
+                if any(indicator in result_summary for indicator in success_keywords):
+                    logger.info(f"Task completed successfully after {iteration+1} iterations")
+                    break
+
 
             
 
@@ -134,11 +147,11 @@ class MasterCrew:
         """Update the planner description based on the no of iteration with executor feedback"""
         last_execution = self.execution_history[-1] if self.execution_history else None
 
-        og_desciption=self.tasks_config["planner_task"]["description"]
+        og_description=self.tasks_config["planner_task"]["description"]
 
         if(iteration==0):   #means first iteration
             self.tasks_config["planner_task"]["description"]=f"""
-            {og_desciption}
+            {og_description}
 
             USER REQUEST: {user_request}
             This is the FIRST CALL
@@ -146,7 +159,7 @@ class MasterCrew:
         else:
             self.tasks_config["planner_task"]["description"]=f"""
 
-            {og_desciption}
+            {og_description}
             
             USER REQUEST: {user_request}
             ITERATION: {iteration + 1}

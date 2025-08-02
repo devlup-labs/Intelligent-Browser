@@ -1,6 +1,6 @@
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
-from playwright.async_api import Page
+from playwright.async_api import Page, PlaywrightError
 
 class GoToPageSchema(BaseModel):
     url: str = Field(..., description="The full URL to navigate to (e.g., https://www.google.com).")
@@ -15,5 +15,7 @@ class GoToPageTool(BaseTool):
         try:
             await self.page.goto(url, wait_until='load')
             return f"Successfully navigated to {url}. The page content is now available."
-        except Exception as e:
-            return f"Failed to navigate to {url}. Error: {e}"
+        except PlaywrightError as e:
+           return f"Navigation failed due to browser error: {e}"
+        except TimeoutError as e:
+           return f"Navigation to {url} timed out: {e}"
