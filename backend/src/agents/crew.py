@@ -3,7 +3,7 @@ import os
 import yaml
 import json
 import logging
-from tools.browser_tools import GoToPageTool
+from tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool
 from utils.browser_manager import BrowserManager
 from playwright.async_api import Page
 from crewai.project import CrewBase, agent, crew, task
@@ -48,6 +48,12 @@ class MasterCrew:
             self.goto_page_tool = GoToPageTool(
                 name=self.tools_config['goto_page_tool']['name'],
                 description=self.tools_config['goto_page_tool']['description'],
+                page=self.page
+            )
+            
+            self.fetch_and_clean_html_tool = FetchAndCleanHTMLTool(
+                name=self.tools_config['fetch_and_clean_html_tool']['name'],
+                description=self.tools_config['fetch_and_clean_html_tool']['description'],
                 page=self.page
             )
         except (FileNotFoundError, yaml.YAMLError) as e:
