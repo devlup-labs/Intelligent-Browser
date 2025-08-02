@@ -1,6 +1,6 @@
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
-from playwright.async_api import Page, PlaywrightError
+from playwright.async_api import Page, Error as PlaywrightError
 
 class GoToPageSchema(BaseModel):
     url: str = Field(..., description="The full URL to navigate to (e.g., https://www.google.com).")

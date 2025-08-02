@@ -2,100 +2,29 @@ planner_task:
   agent: planner_agent
   description: >
     You are a strategic task planner that works iteratively with an executor agent.
-    For the given {{user_request}}, you will:
+    For the given {{user_request}}, you will generate a single, specific task for the executor to perform.
 
-    1. FIRST CALL: Analyze the overall request and provide the master plan overview
-    2. SUBSEQUENT CALLS: Generate ONE specific task at a time based on:
-       - Previous execution results from executor (if any)
-       - Current progress state
-       - What needs to be done next
-    
-    Use ONLY agents from this list: {{agents_list}}
-    
-    Context from previous execution: {{execution_feedback}}
-    Current progress: {{progress_state}}
-    
-    Your response should adapt based on the execution_feedback:
-    - If SUCCESS: Use result_summary and next_step_context to plan next logical step
-    - If FAILURE: Use error_details and suggestions_for_planner to adjust approach
-    - If PARTIAL_FAILURE: Use next_step_context to continue from current state
-    - Always incorporate outputs_created into subsequent task planning
-    
-    Reference examples: {{examples_list}}
+    **Instructions:**
+    1.  **On the FIRST CALL** (when 'execution_feedback' is empty), analyze the overall request and provide the master plan overview along with the first task. Set 'session_type' to 'INITIAL_PLANNING'.
+    2.  **On SUBSEQUENT CALLS**, analyze the 'execution_feedback' and 'progress_state' to generate the NEXT task. Adapt your plan based on the success or failure of the previous step. Set 'session_type' to 'ITERATIVE_PLANNING'.
+    3.  You must always select an agent from this list: {{agents_list}}.
+    4.  Your entire response MUST conform to the required output schema.
 
-  expected_output: |
-    Generate output in this exact JSON format:
-    
-    For FIRST CALL (when no execution_feedback provided):
-    {
-        "session_type": "INITIAL_PLANNING",
-        "overall_task_name": "Complete descriptive name for the entire user request",
-        "master_thought": "Your comprehensive analysis of the user request and high-level approach",
-        "estimated_steps": "Rough estimate of how many major steps this will take",
-        "current_task": {
-            "task_name": "Specific name for the first task to execute",
-            "task_id": 1,
-            "agent_name": "Agent name from agents_list",
-            "task_thought": "Your reasoning for why this task comes first and how it fits the overall plan",
-            "task_description": "Clear, detailed description of what needs to be accomplished in this specific task",
-            "subtasks": [
-                "Step 1: Detailed action item",
-                "Step 2: Another specific action",
-                "Step 3: etc...",
-                {
-                    "input": "variable_name",
-                    "description": "What input data is needed"
-                },
-                {
-                    "output": "variable_name", 
-                    "description": "What output this task should produce"
-                },
-                {
-                    "forEach": "list_variable",
-                    "steps": ["Action for each item in the list"]
-                }
-            ],
-            "expected_outputs": "What specific outputs/results this task should produce"
-        }
-    }
-    
-    For SUBSEQUENT CALLS (when execution_feedback is provided):
-    {
-        "session_type": "ITERATIVE_PLANNING",
-        "overall_task_name": "Same as initial planning",
-        "progress_analysis": "Analysis based on executor's result_summary and what has been completed",
-        "adaptation_reasoning": "How you're adapting based on executor's suggestions_for_planner and error_details",
-        "current_task": {
-            "task_name": "Name for the next task",
-            "task_id": "Sequential number",
-            "agent_name": "Agent name from agents_list",
-            "depends_on_previous": "How this task builds on previous execution results",
-            "task_thought": "Reasoning for this next step",
-            "task_description": "What needs to be done now",
-            "subtasks": [
-                "Step based on executor's next_step_context",
-                "Utilize files from outputs_created: {{execution_feedback.outputs_created}}",
-                "Address any issues from error_details if status was not SUCCESS",
-                "Follow suggestions from suggestions_for_planner"
-            ],
-            "expected_outputs": "What this task should produce"
-        },
-        "remaining_work": "Estimate of what still needs to be done after this task"
-    }
+    **Context from previous execution:**
+    {{execution_feedback}}
 
-  input_variables:
-    - user_request
-    - agents_list  
-    - examples_list
-    - execution_feedback  # JSON from executor agent (empty on first call)
-    - progress_state      # Summary of what's been accomplished so far
+    **Current progress summary:**
+    {{progress_state}}
+  
+  expected_output: >
+    A single JSON object that strictly adheres to the PlannerOutput schema,
+    containing the complete plan for the next single step.
 
   validation_criteria:
-    - "Single task generated per call"
-    - "Clear task breakdown with subtasks"
-    - "Appropriate agent selected from provided list"
-    - "Builds logically on previous execution results"
-    - "Adapts to executor feedback appropriately"
+    - "A single, actionable task is generated per call."
+    - "The correct agent is selected from the provided list."
+    - "The plan logically adapts to feedback from the executor."
+
 
 execution_task:
   agent: executor_agent
@@ -105,45 +34,20 @@ execution_task:
     tools and resources to accomplish the specific objective. Provide clear
     feedback on the execution result to help the planner adapt subsequent steps.
 
+    Your response MUST be a JSON object conforming to the required schema.
+
+    Here are some examples of good responses:
+    {{executor_examples}}
+
   expected_output: >
-    A concise execution result in the following format:
-  
-    STATUS: [SUCCESS/FAILURE/]  
-  
-    For SUCCESS status:
-    - Brief confirmation of task completion
-    - Key outputs or results achieved
-  
-    For FAILURE status:
-    - Clear explanation of what went wrong
-    - Specific error details or obstacles encountered
-    - What was attempted before failure
-    - Suggestions for the planner to modify the approach
-  
-    For PARTIAL_FAILURE status:
-    - What parts were completed successfully
-    - What parts failed and why
-    - Current state of the task
-    - What the planner should adjust for the next step
-  
-    Keep the response focused and actionable for planner feedback.
+    A concise execution result as a JSON object based on the required schema.
+    It MUST include 'status', 'step_description', and 'result_summary'.
+    Provide 'error_details' and 'suggestions_for_planner' on failure.
 
   context_from_planner: true
   allow_delegation: false
   human_input: false
   max_execution_time: 30
-
-  output_json: |
-      {
-      "status": "SUCCESS|FAILURE|PARTIAL_FAILURE",
-      "step_description": "brief description of attempted step",
-      "result_summary": "concise summary of what happened",
-      "error_details": "detailed explanation if status is not SUCCESS",
-      "suggestions_for_planner": "recommendations for next step adaptation",
-      "outputs_created": ["list of any files/results produced"],
-      "next_step_context": "any important context for the next step"
-      }
-
   validation_criteria:
     - "Single step execution attempted"
     - "Clear status provided (SUCCESS/FAILURE/PARTIAL_FAILURE)"
