@@ -25,6 +25,8 @@ export default function signuppage() {
         e.preventDefault();
 
         try{
+
+
             const response= await axios.post("http://localhost:8000/auth/signup", form, {
   headers: {
     "Content-Type": "application/json"
