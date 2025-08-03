@@ -13,6 +13,8 @@ export default function loginpage() {
 
     const forlogin= async () => {
         try{
+
+
             const formData = new URLSearchParams();
             formData.append("username", email);
             formData.append("password", password);
@@ -41,6 +43,7 @@ export default function loginpage() {
                 </h1>
                 <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
                 <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
+
                 <button onClick={forlogin} className="w-full px-8 py-3 bg-blue-800 bg-opacity-20 hover:bg-blue-900 text-white text-lg rounded-lg transition">Continue</button>
             </div>
         </div>
