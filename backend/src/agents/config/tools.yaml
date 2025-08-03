@@ -13,3 +13,43 @@ fetch_and_clean_html_tool:
     Automatically detects interactive elements with positioning data, removes unwanted 
     content (scripts, styles), and structures the output for AI consumption. 
     The input must be a single, complete URL.
+
+
+go_back_tool:
+  name: "Go Back"
+  description: >-
+    A tool to go to the previous page in the browser history.
+    Use this after navigating if you need to return to the previous page.
+
+
+reload_page_tool:
+  name: "Reload Current Page"
+  description: >-
+    A tool to refresh or reload the current page in the browser.
+    Use this if the content has changed or if the page needs to be reloaded.
+    no input is required.
+
+
+get_current_url:
+  name: "Get Current page URL"
+  description: >-
+    A tool to fetch the current URL of the active browser page.
+    Use this to find out which page is currently being viewed.
+    No input is required.      
+
+
+hover_element_tool:
+  name: "Hover Over Element"
+  description: >-
+    Hovers over the specified element on the current page.
+    Provide a valid CSS selector for element to hover on.
+    You can pass either an ID (e.g., {"selector": "#my-id"}) or a class (e.g., {"selector": ".my-class"}).   
+
+
+select_dropdown_tool:
+  name: "Select Dropdown Option"
+  description: >-
+    Selects an option from a dropdown using a CSS selector.
+    you can select by value (example- {"selector": "#my-select", "option_value": "1"}), label (e.g., {"selector": "#my-select", "option_label": "Option 1"}),
+    or index (e.g., {"selector": "#my-select", "option_index": 2}).
+
