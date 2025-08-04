@@ -5,6 +5,10 @@ import asyncio
 from bs4 import BeautifulSoup, NavigableString, Comment
 import re
 from typing import Dict, List, Optional,Literal
+import asyncio
+from bs4 import BeautifulSoup, NavigableString, Comment
+import re
+from typing import Dict, List, Optional
 
 class GoToPageSchema(BaseModel):
     url: str = Field(..., description="The full URL to navigate to (e.g., https://www.google.com).")
@@ -431,35 +435,82 @@ class FetchAndCleanHTMLTool(BaseTool):
             'text': text_content,
             'type': 'interactive'
         }
-    
+class TextInputSchema(BaseModel):
+    text: str = Field(..., description="The text to input into the input field or textarea.")
 
-
-class CheckboxActionSchema(BaseModel):
-    css_selector: str = Field(..., description="The CSS selector for the checkbox element (e.g., '#agree-checkbox', '.toggle-switch').")
-    action: Literal["check", "uncheck"] = Field(..., description="The action to perform: either 'check' to tick the box or 'uncheck' to untick it.")
-
-
-
-class PlaywrightCheckboxTool(BaseTool):
+class TextInputTool(BaseTool):
     name: str 
-    description: str 
-    args_schema: type[BaseModel] = CheckboxActionSchema
-    page: Page  
+    description: str
+    args_schema: type[BaseModel] = TextInputSchema
+    page: Page
 
-    async def _run(self, css_selector: str, action: Literal["check", "uncheck"]) -> str:
+    async def _run(self, text: str) -> str:
         try:
-            locator = self.page.locator(css_selector)
-            
-            if action == "check":
-                await locator.check()
-                return f"Successfully checked the checkbox with selector '{css_selector}'."
-            elif action == "uncheck":
-                await locator.uncheck()
-                return f"Successfully unchecked the checkbox with selector '{css_selector}'."
-            
-            return "Invalid action specified."
+            await self.page.fill('input[type="text"], textarea', text)
+            return f"Successfully inputted text: {text}"
+        except PlaywrightError as e:
+            return f"Failed to input text due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Text input timed out: {e}"
 
-        except PlaywrightError:
-            return f"Error: Timeout while waiting for checkbox with selector '{css_selector}'."
-        except Exception as e:
-            return f"An error occurred while interacting with the checkbox: {e}"
+class TextDeleteSchema(BaseModel):
+    text: str = Field(..., description="The text to delete from the input field or textarea.")
+
+class TextDeleteTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = TextDeleteSchema
+    page: Page
+
+    async def _run(self, text: str) -> str:
+        try:
+            element = await self.page.query_selector('input[type="text"], textarea')
+            await self.page.evaluate(f'element.innerText = element.innerText.replace("{text}", "");')
+            return f"Successfully deleted text: {text}"
+        except PlaywrightError as e:
+            return f"Failed to delete text due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Text deletion timed out: {e}"
+
+class DoubleCLickSchema(BaseModel):
+    selector: str = Field(..., description="The CSS selector of the element to double-click.")
+
+class DoubleClickTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = DoubleCLickSchema
+    page: Page
+
+    async def _run(self, selector: str) -> str:
+        try:
+            element = await self.page.query_selector(selector)
+            if element:
+                await element.dblclick()
+                return f"Successfully double-clicked on the element with selector: {selector}"
+            else:
+                return f"No element found with selector: {selector}"
+        except PlaywrightError as e:
+            return f"Failed to double-click due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Double-click action timed out: {e}"
+        
+class ScrollPageSchema(BaseModel):
+    direction: str = Field(..., description="The direction to scroll the page ('up' or 'down').")
+
+class ScrollPageTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = ScrollPageSchema
+    page: Page
+
+    async def _run(self, direction: str) -> str:
+        try:
+            if direction not in ['up', 'down']:
+                return "Invalid scroll direction. Please use 'up' or 'down'."
+
+            await self.page.evaluate(f'window.scrollBy(0, {100 if direction == "down" else -100});')
+            return f"Successfully scrolled {direction}."
+        except PlaywrightError as e:
+            return f"Failed to scroll due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Scroll action timed out: {e}"
