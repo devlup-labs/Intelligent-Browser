@@ -53,31 +53,43 @@ select_dropdown_tool:
     you can select by value (example- {"selector": "#my-select", "option_value": "1"}), label (e.g., {"selector": "#my-select", "option_label": "Option 1"}),
     or index (e.g., {"selector": "#my-select", "option_index": 2}).
 
-text_input_tool:
-  name: "Input Text"
-  description: >-
-    Inputs text into a specified text field on the current page.
-    Provide a valid CSS selector for the text field and the text to input.
-    Example: {"selector": "#my-input", "text": "Hello World"}.
 
-text_delete_tool:
-  name: "Delete Text"
-  description: >-
-    Deletes text from a specified text field on the current page.
-    Provide a valid CSS selector for the text field.
-    Example: {"selector": "#my-input"}.
 
-double_click_tool:
-  name: "Double Click Element"
+go_back_tool:
+  name: "Go Back"
   description: >-
-    Performs a double-click action on a specified element.
-    Provide a valid CSS selector for the element to double-click.
-    Example: {"selector": "#my-element"}.
+    A tool to go to the previous page in the browser history.
+    Use this after navigating if you need to return to the previous page.
 
-scroll_page_tool:
-  name: "Scroll Page"
+
+reload_page_tool:
+  name: "Reload Current Page"
   description: >-
-    Scrolls the current page in the specified direction.
-    Provide the direction to scroll ('up' or 'down').
-    Example: {"direction": "down"},{"direction": "up"}.
-    Don't give any input other than up or down.
+    A tool to refresh or reload the current page in the browser.
+    Use this if the content has changed or if the page needs to be reloaded.
+    no input is required.
+
+
+get_current_url:
+  name: "Get Current page URL"
+  description: >-
+    A tool to fetch the current URL of the active browser page.
+    Use this to find out which page is currently being viewed.
+    No input is required.      
+
+
+hover_element_tool:
+  name: "Hover Over Element"
+  description: >-
+    Hovers over the specified element on the current page.
+    Provide a valid CSS selector for element to hover on.
+    You can pass either an ID (e.g., {"selector": "#my-id"}) or a class (e.g., {"selector": ".my-class"}).   
+
+
+select_dropdown_tool:
+  name: "Select Dropdown Option"
+  description: >-
+    Selects an option from a dropdown using a CSS selector.
+    you can select by value (example- {"selector": "#my-select", "option_value": "1"}), label (e.g., {"selector": "#my-select", "option_label": "Option 1"}),
+    or index (e.g., {"selector": "#my-select", "option_index": 2}).
+

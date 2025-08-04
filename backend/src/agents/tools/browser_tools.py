@@ -1,14 +1,6 @@
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from playwright.async_api import Page, Error as PlaywrightError
-import asyncio
-from bs4 import BeautifulSoup, NavigableString, Comment
-import re
-from typing import Dict, List, Optional,Literal
-import asyncio
-from bs4 import BeautifulSoup, NavigableString, Comment
-import re
-from typing import Dict, List, Optional
 
 class GoToPageSchema(BaseModel):
     url: str = Field(..., description="The full URL to navigate to (e.g., https://www.google.com).")
@@ -27,6 +19,110 @@ class GoToPageTool(BaseTool):
            return f"Navigation failed due to browser error: {e}"
         except TimeoutError as e:
            return f"Navigation to {url} timed out: {e}"
+        
+
+class EmptySchema(BaseModel):
+    pass        
+
+class GoBackTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = EmptySchema #no input is needed to go back
+    page: Page
+
+    async def _run(self) -> str:
+        try:
+            await self.page.go_back(wait_until='load')
+            return "Successfully went back to previous page."
+        except PlaywrightError as e:
+            return f"Failed to go back due to error: {e}"
+        except TimeoutError as e:
+            return f"Going back timed out:{e}"
+
+class ReloadPageTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = EmptySchema #no input is needed for reload
+    page: Page
+
+    async def _run(self) -> str:
+        try:
+            await self.page.reload(wait_until= 'load')
+            return "Page reloaded successfully"
+        except PlaywrightError as e:
+            return f"Reload failed due to browser error:{e}"
+        except TimeoutError as e:
+            return f"Page reload timed out: {e}"
+        
+
+class GetCurrentURL(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel]= EmptySchema #no input needed
+    page: Page
+
+    async def _run(self) -> str:
+        try:
+            return f"Current page URL: {self.page.url}"
+        except PlaywrightError as e:
+            return f"Failed to retrieve current URL due to broser error: {e}"        
+        
+
+class HoverElementInput(BaseModel):
+    selector: str
+
+
+class HoverEmentTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel]= HoverElementInput
+    page: Page
+
+    async def _run(self, selector:str) -> str:
+        try:
+            await self.page.hover(selector)
+            return f"Hovered over element: {selector}"
+        except PlaywrightError as e:
+            return f"Failed to hover due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Hover action timed out: {e}"
+
+class SelectDropdownInput(BaseModel):
+    selector: str
+    option_value: Optional[str] = None
+    option_label: Optional[str] = None
+    option_index: Optional[int] = None
+
+
+class SelectDropdownTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = SelectDropdownInput
+    page: Page
+
+    async def _run(self, selector:str, option_value: Optional[str]= None, option_label: Optional[str]= None, option_index: Optional[int]= None) -> str:
+        try:
+            if option_value:
+                await self.page.select_option(selector, value= option_value)
+                return f"Selected option with value: {option_value}"
+            
+            elif option_label:
+                await self.page.select_option(selector, label= option_label)
+                return f"Selected option with label: {option_label}"
+            
+            elif option_index:
+                await self.page.select_option(selector, index= option_index)
+                return f"Selected option with index: {option_index}"
+            
+            else:
+                return "No valid option provided. Please specify value, label or index."
+            
+
+        except PlaywrightError as e:
+            return f"Dropdown selection failed: {e}"
+        except TimeoutError as e:
+            return f"Timeout while selecting from dropdown: {e}"    
+
         
 
 
