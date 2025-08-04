@@ -1,6 +1,13 @@
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from playwright.async_api import Page, Error as PlaywrightError
+<<<<<<< HEAD
+=======
+import base64
+
+
+
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
 from bs4 import BeautifulSoup, NavigableString, Comment
 import re
 from typing import Dict, List, Optional
@@ -12,6 +19,7 @@ class TakeScreenshotSchema(BaseModel):
     ss_name: str = Field(default="screenshot.png", description="The name of the screenshot file to be saved(e.g., notionloginpage.png).")
     full_page: bool = Field(default=False, description="Whether to capture the full page screenshot or just the viewport.")
 
+<<<<<<< HEAD
 class ClickElementSchema(BaseModel):
     selector: str = Field(..., description="The CSS selector of the element to click.")
     wait_for_navigation: bool = Field(False, description="Whether to wait for navigation after clicking the element.")
@@ -44,6 +52,8 @@ class SelectDropdownInput(BaseModel):
 class EmptySchema(BaseModel):
     pass  
 
+=======
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
 class TakeScreenshotTool(BaseTool):
     name: str
     description: str
@@ -57,6 +67,7 @@ class TakeScreenshotTool(BaseTool):
                 "path": ss_name if ss_name.endswith('.png') else f"{ss_name}.png"
             }
             screenshot_bytes = await self.page.screenshot(**screenshot_options)
+<<<<<<< HEAD
             # base64_image = base64.b64encode(screenshot_bytes).decode('utf-8')
             # return f"""Image: data:image/png;base64,{base64_image}
             # The screenshot shows the current state of the webpage. You can now:
@@ -65,6 +76,16 @@ class TakeScreenshotTool(BaseTool):
             # - Read text content and navigation menus
             # - Determine the next action to take
             # - Locate specific elements for clicking or interaction"""
+=======
+            base64_image = base64.b64encode(screenshot_bytes).decode('utf-8')
+            return f"""Image: data:image/png;base64,{base64_image}
+            The screenshot shows the current state of the webpage. You can now:
+            - Analyze the visual content and layout
+            - Identify buttons, links, forms, and interactive elements
+            - Read text content and navigation menus
+            - Determine the next action to take
+            - Locate specific elements for clicking or interaction"""
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
         except PlaywrightError as e:
             return f"Failed to take screenshot due to browser error: {e}"
         except Exception as e:
@@ -81,7 +102,10 @@ class SelectDropdownInput(BaseModel):
 
 class FetchAndCleanHTMLSchema(BaseModel):
     url: str = Field(..., description="URL parameter (not used - tool works on current page content)")
+<<<<<<< HEAD
 
+=======
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
 class GoToPageTool(BaseTool):
     name: str 
     description: str
@@ -181,6 +205,13 @@ class GetCurrentURL(BaseTool):
             return f"Failed to retrieve current URL due to broser error: {e}"        
         
 
+<<<<<<< HEAD
+=======
+class HoverElementInput(BaseModel):
+    selector: str
+
+
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
 class HoverElementTool(BaseTool):
     name: str
     description: str

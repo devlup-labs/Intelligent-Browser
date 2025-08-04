@@ -11,6 +11,7 @@ planner_task:
        - Current progress state: {{progress_state}}
        - What needs to be done next
        - You also have access to the HTML_PARSER_TOOL, a specialized tool responsible for retrieving raw HTML content from a webpage and returning a clean, structured version of the HTML for further processing.
+<<<<<<< HEAD
        - Mention this tool "ONLY" when you need to interact with a webpage, such as clicking buttons, filling forms, or navigating links so that executor can use, and not for browser and system level tasks such as scrolling, hovering and taking a screenshot.
 
     IMPORTANT - TASK COMPLETION DETECTION:
@@ -19,6 +20,10 @@ planner_task:
     - No further meaningful actions are required to fulfill the user's request
     - The task has reached a natural completion state (e.g., form submitted, data extracted, navigation completed)
 
+=======
+       - Mention this tool "ONLY" when you need to interact with a webpage, such as clicking buttons, filling forms, or navigating links so that executor can use.
+
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
     NOTE: All planning must populate a `steps` list (list of task objects). Each object must follow the `Step` format.
 
     The `current_task` should always reference the first `PENDING` step in the `steps` list. In the INITIAL_PLANNING stage, it is the first step by default.
@@ -33,9 +38,13 @@ planner_task:
     - In ITERATIVE_PLANNING, update the status of previous step in `steps`, and assign next `PENDING` step to `current_task`.
     - Agent name must be 'executor_agent' for all steps.
     - Follow the structure in subtasks: mix of string steps and structured steps (input/output/forEach).
+<<<<<<< HEAD
     - CRITICAL: Set `task_is_final` to true in ITERATIVE_PLANNING when the user's complete request has been fulfilled and no more steps are needed.
     - Do not mention any other content other than the below JSON structure. I don't want any other content in the output.
     
+=======
+    - Do not mention any other content other than the below JSON structure. I don't want any other content in the output.
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
     {
       "session_type": "INITIAL_PLANNING",
       "overall_task_name": "[Descriptive name for the complete user request]",
@@ -82,8 +91,12 @@ planner_task:
         "task_name": "[Simple name matching next pending step]",
         "status": "PENDING"
       },
+<<<<<<< HEAD
       "remaining_work": "[Brief description of what still needs to be done, or 'Task completed successfully' if task_is_final is true]",
       "task_is_final": "[true if this is the final step and user request is completely fulfilled, false otherwise]"
+=======
+      "remaining_work": "[Brief description of what still needs to be done]"
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
     }
 
   input_variables:
@@ -100,7 +113,10 @@ planner_task:
     - "Session type correctly identifies INITIAL_PLANNING vs ITERATIVE_PLANNING"
     - "`current_task` correctly picked as first PENDING task from steps"
     - "Status of previous task updated in steps list"
+<<<<<<< HEAD
     - "`task_is_final` is set to true only when user request is completely fulfilled"
+=======
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
 
 execution_task:
   agent: executor_agent
@@ -110,6 +126,7 @@ execution_task:
     tools and resources to accomplish the specific objective. Provide clear
     feedback on the execution result to help the planner adapt subsequent steps.
 
+<<<<<<< HEAD
     **CRITICAL TOOL USAGE RULES:**
 
     **STATE AWARENESS**
@@ -137,12 +154,22 @@ execution_task:
     
     **Extract from HTML Parser for Playwright Tools:**
     After parsing HTML, extract these selectors for your Playwright tools:
+=======
+    **HTML Parser Tool Usage:**
+    - Use fetch_and_clean_html_tool for ANY webpage interaction task (clicks, inputs, navigation)
+    - ONLY call it once per page - reuse output if already called for current URL
+    - Call again only when navigating to new pages or after significant page changes
+
+    **Extract from HTML Parser for Playwright Tools:**
+    After parsing HTML, extract these selectors for your Playwright-based tools:
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
     - id="button1" → use id selector: #button1
     - class="submit-btn" → use class selector: .submit-btn  
     - Position x="128" y="281" → use coordinates: (128, 281)
     - href="/login" → use for navigation
     - name="username" → use name selector: [name="username"]
 
+<<<<<<< HEAD
     **Efficient Tool Usage Flow:**
     1. Analyze the task: Do I need to interact with specific webpage elements?
     2. If YES → Call fetch_and_clean_html_tool → Extract selectors → Use appropriate tools
@@ -153,6 +180,12 @@ execution_task:
     - Do not retry the same tool with identical parameters multiple times
     - When providing feedback to the planner, clearly indicate if this step represents the completion of the user's overall request
     - Focus on completing the assigned task efficiently without unnecessary tool usage
+=======
+    **Tool Usage Flow:**
+    1. Need webpage interaction? → Call fetch_and_clean_html_tool (if not cached)
+    2. Parse HTML output → Extract id/class/position/name attributes
+    3. Use extracted selectors with your Playwright tools (click, input, etc.)
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
 
     Your response MUST be a JSON object conforming to the required schema.
 
@@ -163,9 +196,15 @@ execution_task:
       "step_description": "brief description of attempted step",
       "result_summary": "concise summary of what happened",
       "error_details": "detailed explanation if status is not SUCCESS",
+<<<<<<< HEAD
       "suggestions_for_planner": "recommendations for next step adaptation, or indicate if user request is now complete",
       "outputs_created": ["list of any files/results produced"],
       "next_step_context": "any important context for the next step (avoid passing HTML_PARSER_TOOL output), or 'Task completed - user request fulfilled' if this was the final step"
+=======
+      "suggestions_for_planner": "recommendations for next step adaptation",
+      "outputs_created": ["list of any files/results produced"],
+      "next_step_context": "any important context for the next step (avoid passing HTML_PARSER_TOOL output)"
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
     }
 
   context_from_planner: true
@@ -178,6 +217,11 @@ execution_task:
     - "Clear status provided (SUCCESS/FAILURE/PARTIAL_FAILURE)"
     - "Appropriate feedback given for planner adaptation"
     - "Response is concise and actionable"
+<<<<<<< HEAD
     - "HTML parser tool used ONLY when interacting with specific webpage elements"
     - "No redundant tool calls or HTML parser calls for simple browser actions"
     - "No retrying identical tool calls multiple times"
+=======
+    - "HTML parser tool used appropriately for webpage interactions"
+    - "No redundant HTML parser calls for the same page"
+>>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
