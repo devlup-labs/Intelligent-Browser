@@ -52,44 +52,47 @@ select_dropdown_tool:
     Selects an option from a dropdown using a CSS selector.
     you can select by value (example- {"selector": "#my-select", "option_value": "1"}), label (e.g., {"selector": "#my-select", "option_label": "Option 1"}),
     or index (e.g., {"selector": "#my-select", "option_index": 2}).
+ 
 
-
-
-go_back_tool:
-  name: "Go Back"
+take_screenshot_tool:
+  name: "Take Screenshot"
   description: >-
-    A tool to go to the previous page in the browser history.
-    Use this after navigating if you need to return to the previous page.
+    A tool to take a screenshot of the current page in the web browser.
+    Use this when you need to capture the current view of the webpage.
+    The screenshot will be saved with a specified filename.
 
-
-reload_page_tool:
-  name: "Reload Current Page"
+chat_tool:
+  name: "Chat with User"
   description: >-
-    A tool to refresh or reload the current page in the browser.
-    Use this if the content has changed or if the page needs to be reloaded.
-    no input is required.
+    A tool to send a message to the user and receive a response.
+    Use this for interactive conversations or to ask for user input.
+    The input should be a string message to send to the user.
 
-
-get_current_url:
-  name: "Get Current page URL"
+text_input_tool:
+  name: "Input Text"
   description: >-
-    A tool to fetch the current URL of the active browser page.
-    Use this to find out which page is currently being viewed.
-    No input is required.      
+    Inputs text into a specified text field on the current page.
+    Provide a valid CSS selector for the text field and the text to input.
+    Example: {"selector": "#my-input", "text": "Hello World"}.
 
-
-hover_element_tool:
-  name: "Hover Over Element"
+text_delete_tool:
+  name: "Delete Text"
   description: >-
-    Hovers over the specified element on the current page.
-    Provide a valid CSS selector for element to hover on.
-    You can pass either an ID (e.g., {"selector": "#my-id"}) or a class (e.g., {"selector": ".my-class"}).   
+    Deletes text from a specified text field on the current page.
+    Provide a valid CSS selector for the text field.
+    Example: {"selector": "#my-input"}.
 
-
-select_dropdown_tool:
-  name: "Select Dropdown Option"
+double_click_tool:
+  name: "Double Click Element"
   description: >-
-    Selects an option from a dropdown using a CSS selector.
-    you can select by value (example- {"selector": "#my-select", "option_value": "1"}), label (e.g., {"selector": "#my-select", "option_label": "Option 1"}),
-    or index (e.g., {"selector": "#my-select", "option_index": 2}).
+    Performs a double-click action on a specified element.
+    Provide a valid CSS selector for the element to double-click.
+    Example: {"selector": "#my-element"}.
 
+scroll_page_tool:
+  name: "Scroll Page"
+  description: >-
+    Scrolls the current page in the specified direction.
+    Provide the direction to scroll ('up' or 'down').
+    Example: {"direction": "down"},{"direction": "up"}.
+    Don't give any input other than up or down.

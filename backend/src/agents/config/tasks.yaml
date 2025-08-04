@@ -2,29 +2,95 @@ planner_task:
   agent: planner_agent
   description: >
     You are a strategic task planner that works iteratively with an executor agent.
-    For the given {{user_request}}, you will generate a single, specific task for the executor to perform.
 
-    **Instructions:**
-    1.  **On the FIRST CALL** (when 'execution_feedback' is empty), analyze the overall request and provide the master plan overview along with the first task. Set 'session_type' to 'INITIAL_PLANNING'.
-    2.  **On SUBSEQUENT CALLS**, analyze the 'execution_feedback' and 'progress_state' to generate the NEXT task. Adapt your plan based on the success or failure of the previous step. Set 'session_type' to 'ITERATIVE_PLANNING'.
-    3.  You must always select an agent from this list: {{agents_list}}.
-    4.  Your entire response MUST conform to the required output schema.
+    For the given task {{user_request}}, you will:
 
-    **Context from previous execution:**
-    {{execution_feedback}}
+    1. FIRST CALL (when no execution_feedback): Analyze the overall request and provide the master plan overview
+    2. SUBSEQUENT CALLS (when execution_feedback exists): Generate ONE specific task at a time based on:
+       - Previous execution results from executor: {{execution_feedback}}
+       - Current progress state: {{progress_state}}
+       - What needs to be done next
+       - You also have access to the HTML_PARSER_TOOL, a specialized tool responsible for retrieving raw HTML content from a webpage and returning a clean, structured version of the HTML for further processing.
+       - Mention this tool "ONLY" when you need to interact with a webpage, such as clicking buttons, filling forms, or navigating links so that executor can use.
 
-    **Current progress summary:**
-    {{progress_state}}
-  
-  expected_output: >
-    A single JSON object that strictly adheres to the PlannerOutput schema,
-    containing the complete plan for the next single step.
+    NOTE: All planning must populate a `steps` list (list of task objects). Each object must follow the `Step` format.
+
+    The `current_task` should always reference the first `PENDING` step in the `steps` list. In the INITIAL_PLANNING stage, it is the first step by default.
+
+  expected_output: |
+    Output must conform to the `PlannerOutputFormat` model combining both initial and iterative types.
+
+    Key rules:
+    - Every plan must include a `steps` list, with each task as a Step object.
+    - `current_task` is always the first uncompleted task from the `steps` list.
+    - In INITIAL_PLANNING, set current_task = steps[0].
+    - In ITERATIVE_PLANNING, update the status of previous step in `steps`, and assign next `PENDING` step to `current_task`.
+    - Agent name must be 'executor_agent' for all steps.
+    - Follow the structure in subtasks: mix of string steps and structured steps (input/output/forEach).
+    - Do not mention any other content other than the below JSON structure. I don't want any other content in the output.
+    {
+      "session_type": "INITIAL_PLANNING",
+      "overall_task_name": "[Descriptive name for the complete user request]",
+      "master_thought": "[Your analysis of the user request and overall approach strategy]",
+      "estimated_steps": "[Number estimate of major steps required]",
+      "steps": [
+        {
+          "step_id": 1,
+          "task_name": "[Simple name for step 1]",
+          "status": "PENDING"
+        },
+        {
+          "step_id": 2,
+          "task_name": "[Simple name for step 2]",
+          "status": "PENDING"
+        }
+      ],
+      "current_task": {
+        "step_id": 1,
+        "task_name": "[Simple name matching first step]",
+        "status": "PENDING"
+      }
+    }
+
+    {
+      "session_type": "ITERATIVE_PLANNING",
+      "overall_task_name": "[Same as initial planning]",
+      "progress_analysis": "[Analysis of what has been completed based on executor feedback]",
+      "adaptation_reasoning": "[How you're adapting based on executor results and suggestions]",
+      "steps": [
+        {
+          "step_id": 1,
+          "task_name": "[Simple name for step 1]",
+          "status": "SUCCESS"
+        },
+        {
+          "step_id": 2,
+          "task_name": "[Simple name for step 2]",
+          "status": "PENDING"
+        }
+      ],
+      "current_task": {
+        "step_id": 2,
+        "task_name": "[Simple name matching next pending step]",
+        "status": "PENDING"
+      },
+      "remaining_work": "[Brief description of what still needs to be done]"
+    }
+
+  input_variables:
+    - user_request
+    - agents_list
+    - execution_feedback
+    - progress_state
+    - iteration
 
   validation_criteria:
-    - "A single, actionable task is generated per call."
-    - "The correct agent is selected from the provided list."
-    - "The plan logically adapts to feedback from the executor."
-
+    - "JSON format matches exactly with PlannerOutputFormat"
+    - "Agent name is always 'executor_agent'"
+    - "Task description is clear and actionable"
+    - "Session type correctly identifies INITIAL_PLANNING vs ITERATIVE_PLANNING"
+    - "`current_task` correctly picked as first PENDING task from steps"
+    - "Status of previous task updated in steps list"
 
 execution_task:
   agent: executor_agent
@@ -34,22 +100,47 @@ execution_task:
     tools and resources to accomplish the specific objective. Provide clear
     feedback on the execution result to help the planner adapt subsequent steps.
 
+    **HTML Parser Tool Usage:**
+    - Use fetch_and_clean_html_tool for ANY webpage interaction task (clicks, inputs, navigation)
+    - ONLY call it once per page - reuse output if already called for current URL
+    - Call again only when navigating to new pages or after significant page changes
+
+    **Extract from HTML Parser for Playwright Tools:**
+    After parsing HTML, extract these selectors for your Playwright-based tools:
+    - id="button1" → use id selector: #button1
+    - class="submit-btn" → use class selector: .submit-btn  
+    - Position x="128" y="281" → use coordinates: (128, 281)
+    - href="/login" → use for navigation
+    - name="username" → use name selector: [name="username"]
+
+    **Tool Usage Flow:**
+    1. Need webpage interaction? → Call fetch_and_clean_html_tool (if not cached)
+    2. Parse HTML output → Extract id/class/position/name attributes
+    3. Use extracted selectors with your Playwright tools (click, input, etc.)
+
     Your response MUST be a JSON object conforming to the required schema.
 
-    Here are some examples of good responses:
-    {{executor_examples}}
-
-  expected_output: >
-    A concise execution result as a JSON object based on the required schema.
-    It MUST include 'status', 'step_description', and 'result_summary'.
-    Provide 'error_details' and 'suggestions_for_planner' on failure.
+  expected_output: |
+    Generate output in this exact "JSON" format based on below structure
+    {
+      "status": "SUCCESS|FAILURE|PARTIAL_FAILURE",
+      "step_description": "brief description of attempted step",
+      "result_summary": "concise summary of what happened",
+      "error_details": "detailed explanation if status is not SUCCESS",
+      "suggestions_for_planner": "recommendations for next step adaptation",
+      "outputs_created": ["list of any files/results produced"],
+      "next_step_context": "any important context for the next step (avoid passing HTML_PARSER_TOOL output)"
+    }
 
   context_from_planner: true
   allow_delegation: false
   human_input: false
   max_execution_time: 30
+
   validation_criteria:
     - "Single step execution attempted"
     - "Clear status provided (SUCCESS/FAILURE/PARTIAL_FAILURE)"
     - "Appropriate feedback given for planner adaptation"
     - "Response is concise and actionable"
+    - "HTML parser tool used appropriately for webpage interactions"
+    - "No redundant HTML parser calls for the same page"

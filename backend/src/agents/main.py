@@ -9,7 +9,7 @@ nest_asyncio.apply()
 
 async def run():
     user_request = input("Ask me anything!! ---> ")
-    agent_list = ["executor_agent"]
+    agent_list = ["planner_agent", "executor_agent"]
     
     executor_examples_json = json.dumps(executor_examples_list, indent=2)
 
@@ -23,9 +23,10 @@ async def run():
     
     try:
         page = await browser_manager.start()
-        my_crew = MasterCrew(page=page)
+        my_crew = MasterCrew(PAGE=page)
         
-        my_crew.run(inputs=inputs)
+        my_crew.run_iterative_planner_executor(
+            user_request=inputs["user_request"])
         
     finally:
         print("Closing browser...")

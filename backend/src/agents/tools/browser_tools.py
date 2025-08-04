@@ -1,10 +1,58 @@
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from playwright.async_api import Page, Error as PlaywrightError
+import base64
+
+
+
+from bs4 import BeautifulSoup, NavigableString, Comment
+import re
+from typing import Dict, List, Optional
 
 class GoToPageSchema(BaseModel):
     url: str = Field(..., description="The full URL to navigate to (e.g., https://www.google.com).")
 
+class TakeScreenshotSchema(BaseModel):
+    ss_name: str = Field(default="screenshot.png", description="The name of the screenshot file to be saved(e.g., notionloginpage.png).")
+    full_page: bool = Field(default=False, description="Whether to capture the full page screenshot or just the viewport.")
+
+class TakeScreenshotTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = TakeScreenshotSchema
+    page: Page
+
+    async def _run(self, ss_name: str, full_page: bool) -> str:
+        try:
+            screenshot_options = {
+                "full_page": full_page,
+                "path": ss_name if ss_name.endswith('.png') else f"{ss_name}.png"
+            }
+            screenshot_bytes = await self.page.screenshot(**screenshot_options)
+            base64_image = base64.b64encode(screenshot_bytes).decode('utf-8')
+            return f"""Image: data:image/png;base64,{base64_image}
+            The screenshot shows the current state of the webpage. You can now:
+            - Analyze the visual content and layout
+            - Identify buttons, links, forms, and interactive elements
+            - Read text content and navigation menus
+            - Determine the next action to take
+            - Locate specific elements for clicking or interaction"""
+        except PlaywrightError as e:
+            return f"Failed to take screenshot due to browser error: {e}"
+        except Exception as e:
+            return f"An unexpected error occurred while taking screenshot: {e}"
+
+class HoverElementInput(BaseModel):
+    selector: str
+
+class SelectDropdownInput(BaseModel):
+    selector: str
+    option_value: Optional[str] = None
+    option_label: Optional[str] = None
+    option_index: Optional[int] = None
+
+class FetchAndCleanHTMLSchema(BaseModel):
+    url: str = Field(..., description="URL parameter (not used - tool works on current page content)")
 class GoToPageTool(BaseTool):
     name: str 
     description: str
@@ -72,7 +120,7 @@ class HoverElementInput(BaseModel):
     selector: str
 
 
-class HoverEmentTool(BaseTool):
+class HoverElementTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel]= HoverElementInput
