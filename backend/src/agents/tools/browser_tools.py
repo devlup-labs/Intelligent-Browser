@@ -55,14 +55,14 @@ class TakeScreenshotTool(BaseTool):
                 "path": ss_name if ss_name.endswith('.png') else f"{ss_name}.png"
             }
             screenshot_bytes = await self.page.screenshot(**screenshot_options)
-            base64_image = base64.b64encode(screenshot_bytes).decode('utf-8')
-            return f"""Image: data:image/png;base64,{base64_image}
-            The screenshot shows the current state of the webpage. You can now:
-            - Analyze the visual content and layout
-            - Identify buttons, links, forms, and interactive elements
-            - Read text content and navigation menus
-            - Determine the next action to take
-            - Locate specific elements for clicking or interaction"""
+            # base64_image = base64.b64encode(screenshot_bytes).decode('utf-8')
+            # return f"""Image: data:image/png;base64,{base64_image}
+            # The screenshot shows the current state of the webpage. You can now:
+            # - Analyze the visual content and layout
+            # - Identify buttons, links, forms, and interactive elements
+            # - Read text content and navigation menus
+            # - Determine the next action to take
+            # - Locate specific elements for clicking or interaction"""
         except PlaywrightError as e:
             return f"Failed to take screenshot due to browser error: {e}"
         except Exception as e:

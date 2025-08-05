@@ -75,6 +75,7 @@ class IterativePlanning(BaseModel):
     steps: List[Step]
     current_task: Step
     remaining_work: str
+    task_is_final: bool = False
 
 
 # Unified Planner Output Format
@@ -254,63 +255,192 @@ class MasterCrew:
         )
             return self.crew_instance
     
-    # There is a issue over here in the fact that every time a its a new crew that is called memory remians only with one crew so this can create a problem
-    #And the same issue exists with task as well if we cache just the same crew still the task creation is new very time
-    #We want purana task only but with new context
-    def run_iterative_planner_executor(self,user_request,max_iterations=2):
-        """It will run Planner and Executor iteratively"""
+    def is_task_complete(self, planner_output):
+        """
+        Check if the task is complete based on planner output
+        
+        Args:
+            planner_output: The parsed JSON output from the planner
+            
+        Returns:
+            bool: True if task is complete, False otherwise
+        """
+        try:
+            # Primary check: planner has explicitly marked task as final
+            if (planner_output.get("session_type") == "ITERATIVE_PLANNING" and 
+                planner_output.get("task_is_final", False)):
+                logger.info("✅ Task marked as final by planner")
+                return True
+                
+            # Secondary check: analyze executor feedback for completion indicators
+            if self.execution_history:
+                last_execution = self.execution_history[-1]
+                
+                # Check if executor explicitly indicates completion
+                if last_execution.get("status") == "SUCCESS":
+                    
+                    # Check suggestions_for_planner for completion indicators
+                    suggestions = last_execution.get("suggestions_for_planner", "").lower()
+                    completion_phrases = [
+                        "user request is now complete",
+                        "task completed",
+                        "user request fulfilled",
+                        "automation complete",
+                        "process finished",
+                        "workflow completed",
+                        "request complete"
+                    ]
+                    
+                    if any(phrase in suggestions for phrase in completion_phrases):
+                        logger.info("✅ Task completion detected from executor suggestions")
+                        return True
+                    
+                    # Check next_step_context for completion indicators
+                    next_step_context = last_execution.get("next_step_context", "").lower()
+                    if any(phrase in next_step_context for phrase in completion_phrases):
+                        logger.info("✅ Task completion detected from executor context")
+                        return True
+                
+            return False
+            
+        except Exception as e:
+            logger.error(f"❌ Error checking task completion: {e}")
+            return False
 
+    def validate_execution_efficiency(self, execution_result):
+        """
+        Validate that the execution was efficient and didn't use unnecessary tools
+        
+        Args:
+            execution_result: The execution result from the executor
+            
+        Returns:
+            dict: Validation results with warnings if inefficient usage detected
+        """
+        warnings = []
+        
+        try:
+            # Check for common inefficiency patterns
+            step_description = execution_result.get("step_description", "").lower()
+            
+            # Pattern 1: Screenshot task that might have used HTML parser unnecessarily  
+            if "screenshot" in step_description:
+                # This is a heuristic - you might want to track tool usage more explicitly
+                result_summary = execution_result.get("result_summary", "").lower()
+                if "html" in result_summary or "parsed" in result_summary:
+                    warnings.append("⚠️ HTML parsing may have been unnecessary for screenshot task")
+            
+            # Pattern 2: Navigation task that might have used HTML parser
+            if "navigate" in step_description:
+                result_summary = execution_result.get("result_summary", "").lower()
+                if "html" in result_summary or "parsed" in result_summary:
+                    warnings.append("⚠️ HTML parsing may have been unnecessary for navigation task")
+                    
+            # Pattern 3: Multiple tool usage warnings could be detected here
+            # You could extend this to track actual tool usage if you modify the executor output
+            
+            if warnings:
+                for warning in warnings:
+                    logger.warning(warning)
+                    
+            return {
+                "efficient": len(warnings) == 0,
+                "warnings": warnings
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Error validating execution efficiency: {e}")
+            return {"efficient": True, "warnings": []}
+
+    def run_iterative_planner_executor(self, user_request, max_iterations=10):
+        """
+        Run Planner and Executor iteratively until task completion or max iterations
+        
+        Args:
+            user_request: The user's automation request
+            max_iterations: Maximum number of iterations to prevent infinite loops
+        """
+        
+        logger.info(f"🚀 Starting automation task: '{user_request}'")
+        logger.info(f"📊 Max iterations: {max_iterations}")
+        
         for iteration in range(max_iterations):
-            logger.info(f"Starting iteration {iteration+1}")
+            logger.info(f"🔄 Starting iteration {iteration+1}/{max_iterations}")
 
- 
-            kickoff_inputs={
-                "user_request":user_request,
-                "agents_list":["executor_agent"],
-                "execution_feedback":self.execution_history[-1] if self.execution_history else None,
-                "progress_state":f"Iteration {iteration+1},completed {len(self.execution_history)} tasks",
-                "iteration":iteration+1,
+            kickoff_inputs = {
+                "user_request": user_request,
+                "agents_list": ["executor_agent"],
+                "execution_feedback": self.execution_history[-1] if self.execution_history else None,
+                "progress_state": f"Iteration {iteration+1}, completed {len(self.execution_history)} tasks",
+                "iteration": iteration+1,
             }
 
             try:
-                print("---------------------Execution History-------------------------")
-                print(self.execution_history)
-                result=self.crew().kickoff(inputs=kickoff_inputs)
-                print(self.planner_task().output)
-                print("------------------------------RESULT-----------------------------------------")
-                print(result)
-                print("------------------------------RESULT PRINED-----------------------------------------")
+                logger.info(f"📊 Execution history: {len(self.execution_history)} previous tasks")
+                
+                # Execute the crew
+                result = self.crew().kickoff(inputs=kickoff_inputs)
+                
+                # Get planner output for completion checking
+                planner_output = None
+                if hasattr(self.planner_task().output, 'json_dict'):
+                    planner_output = self.planner_task().output.json_dict
+                elif hasattr(self.planner_task().output, 'model_dump'):
+                    planner_output = self.planner_task().output.model_dump()
+                
+                logger.info(f"📋 Planner output: {planner_output}")
+                logger.info(f"🔧 Execution result: {result}")
+                
             except Exception as e:
-                logger.error(f"Error in iteration {iteration+1}: {e}")
-                continue
-            try:
-                json_result = result.model_dump_json()
-                # print(type(json_result))
-                if isinstance(json_result, str):
-                    json_result = json.loads(json_result)
-                final_result = json_result["json_dict"]
-                self.execution_history.append(final_result)
-                # print(type(final_result))
-                print(final_result)
-            except Exception as e:
-                logger.error(f"Error converting result to JSON: {e}")
+                logger.error(f"❌ Error in iteration {iteration+1}: {e}")
                 continue
 
-            # TODO : Need to think how it needs to end
-            # if(self.is_task_complete(executor_output.json_dict,user_request)):
-            #     logger.info(f"Task Completed SuccessFully after {iteration+1} iterations")
-            #     break
+            try:
+                # Parse and store execution result
+                json_result = result.model_dump_json()
+                if isinstance(json_result, str):
+                    json_result = json.loads(json_result)
+                    
+                final_result = json_result.get("json_dict", json_result)
+                self.execution_history.append(final_result)
                 
-    # def is_task_complete(self,execution_output,user_request):
-    #     if execution_output.get("status") == 'SUCCESS':
-    #         # Check if this is truly the final task completion
-    #         result_summary = execution_output.get('result_summary', '').lower()
-    #         next_step_context = execution_output.get('next_step_context', '').lower()
-            
-    #         # More robust completion detection
-    #         completion_indicators = ['completed', 'finished', 'done', 'successful', 'final']
-    #         no_next_steps = any(phrase in next_step_context for phrase in ['no further', 'complete', 'finished'])
-            
-    #         if (any(indicator in result_summary for indicator in completion_indicators) or no_next_steps):
-    #             return True
-    #         return False
+                # Validate execution efficiency
+                efficiency_check = self.validate_execution_efficiency(final_result)
+                if not efficiency_check["efficient"]:
+                    logger.info("💡 Consider optimizing tool usage for better performance")
+                
+                logger.info(f"💾 Stored execution result: {final_result}")
+                
+            except Exception as e:
+                logger.error(f"❌ Error converting result to JSON in iteration {iteration+1}: {e}")
+                continue
+
+            # Check for task completion
+            if self.is_task_complete(planner_output):
+                logger.info(f"🎉 Task completed successfully after {iteration+1} iterations")
+                logger.info(f"📋 Final result: {final_result}")
+                return {
+                    "status": "COMPLETED",
+                    "iterations": iteration + 1,
+                    "final_result": final_result,
+                    "execution_history": self.execution_history
+                }
+                
+            # Check if we're at max iterations
+            if iteration == max_iterations - 1:
+                logger.warning(f"⚠️ Reached maximum iterations ({max_iterations}) without completion")
+                return {
+                    "status": "MAX_ITERATIONS_REACHED", 
+                    "iterations": iteration + 1,
+                    "final_result": final_result if 'final_result' in locals() else None,
+                    "execution_history": self.execution_history
+                }
+                
+            logger.info(f"🔄 Continuing to iteration {iteration+2}")
+        
+        # This should never be reached due to the logic above, but included for completeness
+        return {
+            "status": "UNKNOWN_ERROR",
+            "iterations": max_iterations,
+            "execution_history": self.execution_history
+        }

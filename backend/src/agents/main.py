@@ -11,12 +11,9 @@ async def run():
     user_request = input("Ask me anything!! ---> ")
     agent_list = ["planner_agent", "executor_agent"]
     
-    executor_examples_json = json.dumps(executor_examples_list, indent=2)
-
     inputs = {
         "user_request": user_request,
         "agents_list": agent_list,
-        "executor_examples": executor_examples_json, 
     }
 
     browser_manager = BrowserManager()
