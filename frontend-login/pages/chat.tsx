@@ -99,7 +99,7 @@ export default function Home() {
                 {messages.map((msg, i) => (
                   <div
                     key={i}
-                    className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words ${i % 2 === 1
+                    className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words ${i % 2 === 0
                       ? 'bg-[#42a742] self-end'   // User message → right side
                       : 'bg-[#283039] self-start' // Bot message → left side
                       }`}
