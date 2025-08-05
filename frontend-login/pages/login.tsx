@@ -25,9 +25,9 @@ export default function loginpage() {
 
 
             const {access_token} = response.data;
-            localStorage.setItem("token", access_token);
-            router.push("/dashboard");
             login();
+            localStorage.setItem("token", access_token);
+            router.push("/chat");
         } catch (err: any) {
             alert("Login failed: "+ err.response?.data?.detail || err.message);
             logout();
