@@ -1,5 +1,7 @@
 'use client'
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
+import { AuthContext } from './api/authcontext';
+import { useRouter } from 'next/router';
 // === SVG ICON COMPONENTS ===
 
 function PlusIcon() {
@@ -27,7 +29,7 @@ function SettingsIcon() {
 }
 
 export default function Home() {
-
+  const {isLoggedIn}=useContext(AuthContext);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<string[]>([]);
   const [i, setI] = useState(1);
@@ -52,9 +54,16 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
+  const router=useRouter();
+  useEffect(() => {
+    if (isLoggedIn === false) {
+      router.replace('/');
+    }
+  }, [isLoggedIn]);
+  
   return (
-    <div className="relative flex min-h-screen flex-col bg-[#111418] overflow-x-hidden" style={{ fontFamily: 'Manrope, Noto Sans, sans-serif' }}>
+    isLoggedIn?(
+      <div className="relative flex min-h-screen flex-col bg-[#111418] overflow-x-hidden" style={{ fontFamily: 'Manrope, Noto Sans, sans-serif' }}>
       <div className="layout-container flex h-full grow flex-col">
         <div className="flex flex-1 w-full px-6 py-5 gap-4">
 
@@ -139,5 +148,7 @@ export default function Home() {
         </div>
       </div>
     </div>
+              ):<></>
+    
   );
 }
