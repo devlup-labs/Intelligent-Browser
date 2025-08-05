@@ -14,6 +14,19 @@ fetch_and_clean_html_tool:
     content (scripts, styles), and structures the output for AI consumption. 
     The input must be a single, complete URL.
 
+click_element_tool:
+  name: "Click Element"
+  description: >-
+    A tool to click on a specific element on the current webpage.
+    Use this when you need to interact with a webpage element.
+    The input must be a valid CSS selector for the element.
+
+fill_input_tool:
+  name: "Fill Input"
+  description: >-
+    A tool to fill a text input field on the current webpage.
+    Use this when you need to enter text into a form field.
+    The input must be a valid CSS selector for the element.
 
 go_back_tool:
   name: "Go Back"

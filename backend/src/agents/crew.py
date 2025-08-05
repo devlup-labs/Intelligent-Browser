@@ -5,7 +5,7 @@ import json
 import yaml
 from crewai.project import CrewBase, agent, crew, task
 import logging
-from tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TextInputTool, TakeScreenshotTool
+from tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TextInputTool, TakeScreenshotTool, ClickElementTool, FillInputTool
 from utils.browser_manager import BrowserManager
 from playwright.async_api import Page
 from typing import List, Optional, Literal
@@ -166,6 +166,18 @@ class MasterCrew:
                 page=self.page
             )
 
+            self.click_element_tool = ClickElementTool(
+                name=self.tools_config['click_element_tool']['name'],
+                description=self.tools_config['click_element_tool']['description'],
+                page=self.page
+            )
+
+            self.fill_input_tool = FillInputTool(
+                name=self.tools_config['fill_input_tool']['name'],
+                description=self.tools_config['fill_input_tool']['description'],
+                page=self.page
+            )
+
             # self.check_uncheck_tool = PlaywrightCheckboxTool(
             #     name=self.tools_config['check_uncheck_tool']['name'],
             #     description=self.tools_config['check_uncheck_tool']['description'],
@@ -195,7 +207,14 @@ class MasterCrew:
                    self.hover_element_tool,
                    self.get_current_url,
                    self.go_back_tool,
-                   self.reload_page_tool,self.select_dropdown_tool],
+                   self.reload_page_tool,self.select_dropdown_tool,
+                   self.scroll_page_tool,
+                   self.double_click_tool,
+                   self.text_delete_tool,
+                   self.text_input_tool,
+                   self.click_element_tool,
+                   self.fill_input_tool],
+            output_json=ExecutorOutputFormat,
             llm=llm,
             verbose=True,
         )

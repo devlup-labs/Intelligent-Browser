@@ -2,9 +2,6 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from playwright.async_api import Page, Error as PlaywrightError
 import base64
-
-
-
 from bs4 import BeautifulSoup, NavigableString, Comment
 import re
 from typing import Dict, List, Optional
@@ -15,6 +12,35 @@ class GoToPageSchema(BaseModel):
 class TakeScreenshotSchema(BaseModel):
     ss_name: str = Field(default="screenshot.png", description="The name of the screenshot file to be saved(e.g., notionloginpage.png).")
     full_page: bool = Field(default=False, description="Whether to capture the full page screenshot or just the viewport.")
+
+class ClickElementSchema(BaseModel):
+    selector: str = Field(..., description="The CSS selector of the element to click.")
+    wait_for_navigation: bool = Field(False, description="Whether to wait for navigation after clicking the element.")
+
+class FillInputSchema(BaseModel):
+    selector: str = Field(..., description="The CSS selector of the input field to fill.")
+    value: str = Field(..., description="The value to fill into the input field.")
+
+class HoverElementInput(BaseModel):
+    selector: str
+
+class DoubleCLickSchema(BaseModel):
+    selector: str = Field(..., description="The CSS selector of the element to double-click.")
+
+class TextInputSchema(BaseModel):
+    text: str = Field(..., description="The text to input into the input field or textarea.")
+
+class ScrollPageSchema(BaseModel):
+    direction: str = Field(..., description="The direction to scroll the page ('up' or 'down').")
+
+class TextDeleteSchema(BaseModel):
+    text: str = Field(..., description="The text to delete from the input field or textarea.")
+
+class FetchAndCleanHTMLSchema(BaseModel):
+    url: str = Field(..., description="URL parameter (not used - tool works on current page content)")
+
+class EmptySchema(BaseModel):
+    pass  
 
 class TakeScreenshotTool(BaseTool):
     name: str
@@ -53,6 +79,7 @@ class SelectDropdownInput(BaseModel):
 
 class FetchAndCleanHTMLSchema(BaseModel):
     url: str = Field(..., description="URL parameter (not used - tool works on current page content)")
+
 class GoToPageTool(BaseTool):
     name: str 
     description: str
@@ -68,10 +95,46 @@ class GoToPageTool(BaseTool):
         except TimeoutError as e:
            return f"Navigation to {url} timed out: {e}"
         
+class ClickElementTool(BaseTool):
+    name: str 
+    description: str
+    args_schema: type[BaseModel] = ClickElementSchema
+    page: Page
 
-class EmptySchema(BaseModel):
-    pass        
+    async def _run(self, selector: str, wait_for_navigation: bool = False) -> str:
+        try:
+            element = await self.page.query_selector(selector)
+            if not element:
+                return f"Element with selector '{selector}' not found."
+            
+            await element.click()
+            if wait_for_navigation:
+                await self.page.wait_for_navigation(wait_until='load')
+            return f"Clicked on element with selector '{selector}'."
+        except PlaywrightError as e:
+            return f"Click action failed due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Click action timed out: {e}"
+        
+class FillInputTool(BaseTool):
+    name: str 
+    description: str
+    args_schema: type[BaseModel] = FillInputSchema
+    page: Page
 
+    async def _run(self, selector: str, value: str) -> str:
+        try:
+            element = await self.page.query_selector(selector)
+            if not element:
+                return f"Input field with selector '{selector}' not found."
+            
+            await element.fill(value)
+            return f"Filled input field with selector '{selector}' with value '{value}'."
+        except PlaywrightError as e:
+            return f"Fill action failed due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Fill action timed out: {e}"
+        
 class GoBackTool(BaseTool):
     name: str
     description: str
@@ -115,10 +178,6 @@ class GetCurrentURL(BaseTool):
         except PlaywrightError as e:
             return f"Failed to retrieve current URL due to broser error: {e}"        
         
-
-class HoverElementInput(BaseModel):
-    selector: str
-
 
 class HoverElementTool(BaseTool):
     name: str
@@ -170,13 +229,81 @@ class SelectDropdownTool(BaseTool):
             return f"Dropdown selection failed: {e}"
         except TimeoutError as e:
             return f"Timeout while selecting from dropdown: {e}"    
-
         
 
+class TextInputTool(BaseTool):
+    name: str 
+    description: str
+    args_schema: type[BaseModel] = TextInputSchema
+    page: Page
+
+    async def _run(self, text: str) -> str:
+        try:
+            await self.page.fill('input[type="text"], textarea', text)
+            return f"Successfully inputted text: {text}"
+        except PlaywrightError as e:
+            return f"Failed to input text due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Text input timed out: {e}"
 
 
-class FetchAndCleanHTMLSchema(BaseModel):
-    url: str = Field(..., description="URL parameter (not used - tool works on current page content)")
+
+class TextDeleteTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = TextDeleteSchema
+    page: Page
+
+    async def _run(self, text: str) -> str:
+        try:
+            element = await self.page.query_selector('input[type="text"], textarea')
+            await self.page.evaluate(f'element.innerText = element.innerText.replace("{text}", "");')
+            return f"Successfully deleted text: {text}"
+        except PlaywrightError as e:
+            return f"Failed to delete text due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Text deletion timed out: {e}"
+
+
+
+class DoubleClickTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = DoubleCLickSchema
+    page: Page
+
+    async def _run(self, selector: str) -> str:
+        try:
+            element = await self.page.query_selector(selector)
+            if element:
+                await element.dblclick()
+                return f"Successfully double-clicked on the element with selector: {selector}"
+            else:
+                return f"No element found with selector: {selector}"
+        except PlaywrightError as e:
+            return f"Failed to double-click due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Double-click action timed out: {e}"
+        
+
+class ScrollPageTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = ScrollPageSchema
+    page: Page
+
+    async def _run(self, direction: str) -> str:
+        try:
+            if direction not in ['up', 'down']:
+                return "Invalid scroll direction. Please use 'up' or 'down'."
+
+            await self.page.evaluate(f'window.scrollBy(0, {100 if direction == "down" else -100});')
+            return f"Successfully scrolled {direction}."
+        except PlaywrightError as e:
+            return f"Failed to scroll due to browser error: {e}"
+        except TimeoutError as e:
+            return f"Scroll action timed out: {e}"
+
 
 class FetchAndCleanHTMLTool(BaseTool):
     name: str 
@@ -579,82 +706,5 @@ class FetchAndCleanHTMLTool(BaseTool):
             'text': text_content,
             'type': 'interactive'
         }
-class TextInputSchema(BaseModel):
-    text: str = Field(..., description="The text to input into the input field or textarea.")
 
-class TextInputTool(BaseTool):
-    name: str 
-    description: str
-    args_schema: type[BaseModel] = TextInputSchema
-    page: Page
 
-    async def _run(self, text: str) -> str:
-        try:
-            await self.page.fill('input[type="text"], textarea', text)
-            return f"Successfully inputted text: {text}"
-        except PlaywrightError as e:
-            return f"Failed to input text due to browser error: {e}"
-        except TimeoutError as e:
-            return f"Text input timed out: {e}"
-
-class TextDeleteSchema(BaseModel):
-    text: str = Field(..., description="The text to delete from the input field or textarea.")
-
-class TextDeleteTool(BaseTool):
-    name: str
-    description: str
-    args_schema: type[BaseModel] = TextDeleteSchema
-    page: Page
-
-    async def _run(self, text: str) -> str:
-        try:
-            element = await self.page.query_selector('input[type="text"], textarea')
-            await self.page.evaluate(f'element.innerText = element.innerText.replace("{text}", "");')
-            return f"Successfully deleted text: {text}"
-        except PlaywrightError as e:
-            return f"Failed to delete text due to browser error: {e}"
-        except TimeoutError as e:
-            return f"Text deletion timed out: {e}"
-
-class DoubleCLickSchema(BaseModel):
-    selector: str = Field(..., description="The CSS selector of the element to double-click.")
-
-class DoubleClickTool(BaseTool):
-    name: str
-    description: str
-    args_schema: type[BaseModel] = DoubleCLickSchema
-    page: Page
-
-    async def _run(self, selector: str) -> str:
-        try:
-            element = await self.page.query_selector(selector)
-            if element:
-                await element.dblclick()
-                return f"Successfully double-clicked on the element with selector: {selector}"
-            else:
-                return f"No element found with selector: {selector}"
-        except PlaywrightError as e:
-            return f"Failed to double-click due to browser error: {e}"
-        except TimeoutError as e:
-            return f"Double-click action timed out: {e}"
-        
-class ScrollPageSchema(BaseModel):
-    direction: str = Field(..., description="The direction to scroll the page ('up' or 'down').")
-
-class ScrollPageTool(BaseTool):
-    name: str
-    description: str
-    args_schema: type[BaseModel] = ScrollPageSchema
-    page: Page
-
-    async def _run(self, direction: str) -> str:
-        try:
-            if direction not in ['up', 'down']:
-                return "Invalid scroll direction. Please use 'up' or 'down'."
-
-            await self.page.evaluate(f'window.scrollBy(0, {100 if direction == "down" else -100});')
-            return f"Successfully scrolled {direction}."
-        except PlaywrightError as e:
-            return f"Failed to scroll due to browser error: {e}"
-        except TimeoutError as e:
-            return f"Scroll action timed out: {e}"
