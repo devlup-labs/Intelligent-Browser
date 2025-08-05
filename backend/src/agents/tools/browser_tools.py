@@ -1,7 +1,6 @@
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from playwright.async_api import Page, Error as PlaywrightError
-import base64
 from bs4 import BeautifulSoup, NavigableString, Comment
 import re
 from typing import Dict, List, Optional
@@ -27,9 +26,6 @@ class HoverElementInput(BaseModel):
 class DoubleCLickSchema(BaseModel):
     selector: str = Field(..., description="The CSS selector of the element to double-click.")
 
-class TextInputSchema(BaseModel):
-    text: str = Field(..., description="The text to input into the input field or textarea.")
-
 class ScrollPageSchema(BaseModel):
     direction: str = Field(..., description="The direction to scroll the page ('up' or 'down').")
 
@@ -38,6 +34,12 @@ class TextDeleteSchema(BaseModel):
 
 class FetchAndCleanHTMLSchema(BaseModel):
     url: str = Field(..., description="URL parameter (not used - tool works on current page content)")
+
+class SelectDropdownInput(BaseModel):
+    selector: str
+    option_value: Optional[str] = None
+    option_label: Optional[str] = None
+    option_index: Optional[int] = None
 
 class EmptySchema(BaseModel):
     pass  
@@ -194,12 +196,6 @@ class HoverElementTool(BaseTool):
         except TimeoutError as e:
             return f"Hover action timed out: {e}"
 
-class SelectDropdownInput(BaseModel):
-    selector: str
-    option_value: Optional[str] = None
-    option_label: Optional[str] = None
-    option_index: Optional[int] = None
-
 
 class SelectDropdownTool(BaseTool):
     name: str
@@ -229,22 +225,6 @@ class SelectDropdownTool(BaseTool):
             return f"Dropdown selection failed: {e}"
         except TimeoutError as e:
             return f"Timeout while selecting from dropdown: {e}"    
-        
-
-class TextInputTool(BaseTool):
-    name: str 
-    description: str
-    args_schema: type[BaseModel] = TextInputSchema
-    page: Page
-
-    async def _run(self, text: str) -> str:
-        try:
-            await self.page.fill('input[type="text"], textarea', text)
-            return f"Successfully inputted text: {text}"
-        except PlaywrightError as e:
-            return f"Failed to input text due to browser error: {e}"
-        except TimeoutError as e:
-            return f"Text input timed out: {e}"
 
 
 

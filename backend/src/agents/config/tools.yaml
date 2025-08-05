@@ -81,13 +81,6 @@ chat_tool:
     Use this for interactive conversations or to ask for user input.
     The input should be a string message to send to the user.
 
-text_input_tool:
-  name: "Input Text"
-  description: >-
-    Inputs text into a specified text field on the current page.
-    Provide a valid CSS selector for the text field and the text to input.
-    Example: {"selector": "#my-input", "text": "Hello World"}.
-
 text_delete_tool:
   name: "Delete Text"
   description: >-

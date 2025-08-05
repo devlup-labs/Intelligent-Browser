@@ -5,13 +5,12 @@ import json
 import yaml
 from crewai.project import CrewBase, agent, crew, task
 import logging
-from tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TextInputTool, TakeScreenshotTool, ClickElementTool, FillInputTool
+from tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TakeScreenshotTool, ClickElementTool, FillInputTool
 from utils.browser_manager import BrowserManager
 from playwright.async_api import Page
 from typing import List, Optional, Literal
 from enum import Enum
 from typing import Union
-# from examples.planner_agent_example import examples
 
 from utils.browser_manager import BrowserManager 
 logging.basicConfig(level=logging.INFO)
@@ -161,11 +160,6 @@ class MasterCrew:
                 description=self.tools_config['text_delete_tool']['description'],
                 page=self.page
             )
-            self.text_input_tool = TextInputTool(
-                name=self.tools_config['text_input_tool']['name'],
-                description=self.tools_config['text_input_tool']['description'],
-                page=self.page
-            )
 
             self.click_element_tool = ClickElementTool(
                 name=self.tools_config['click_element_tool']['name'],
@@ -212,7 +206,6 @@ class MasterCrew:
                    self.scroll_page_tool,
                    self.double_click_tool,
                    self.text_delete_tool,
-                   self.text_input_tool,
                    self.click_element_tool,
                    self.fill_input_tool],
             output_json=ExecutorOutputFormat,
@@ -325,7 +318,7 @@ class MasterCrew:
             logger.error(f"❌ Error validating execution efficiency: {e}")
             return {"efficient": True, "warnings": []}
 
-    def run_iterative_planner_executor(self, user_request, max_iterations=10):
+    def run_iterative_planner_executor(self, user_request, max_iterations=5):
 
         
         logger.info(f"🚀 Starting automation task: '{user_request}'")

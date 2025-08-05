@@ -1,7 +1,5 @@
 import asyncio
 from crew import MasterCrew
-import json
-from examples.executor_agent_example import executor_examples_list
 from utils.browser_manager import BrowserManager
 import nest_asyncio
 

@@ -15,7 +15,6 @@ planner_task:
 
     IMPORTANT - TASK COMPLETION DETECTION:
     You must carefully analyze if the user's original request has been fully completed. Set `task_is_final` to true ONLY when:
-    - All major objectives from the user request have been accomplished
     - The executor has successfully completed the final step
     - No further meaningful actions are required to fulfill the user's request
     - The task has reached a natural completion state (e.g., form submitted, data extracted, navigation completed)
@@ -112,6 +111,11 @@ execution_task:
     feedback on the execution result to help the planner adapt subsequent steps.
 
     **CRITICAL TOOL USAGE RULES:**
+
+    **STATE AWARENESS**
+    - Remember what you just did. If you *just* used `Fetch and Clean HTML Content` on the current page, you ALREADY HAVE the HTML.
+    - **DO NOT** use the tool again in your next thought. Instead, analyze the HTML you already received to find selectors and use other tools like `Click Element` or `Fill Input`.
+    - Repeatedly fetching the same HTML is a critical failure of your efficiency goal.
     
     **HTML Parser Tool Usage (STRICT):**
     - Use fetch_and_clean_html_tool ONLY when you need to interact with webpage elements (clicking buttons, filling forms, selecting dropdowns, finding links)
