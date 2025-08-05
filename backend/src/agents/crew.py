@@ -256,30 +256,17 @@ class MasterCrew:
             return self.crew_instance
     
     def is_task_complete(self, planner_output):
-        """
-        Check if the task is complete based on planner output
-        
-        Args:
-            planner_output: The parsed JSON output from the planner
-            
-        Returns:
-            bool: True if task is complete, False otherwise
-        """
         try:
-            # Primary check: planner has explicitly marked task as final
             if (planner_output.get("session_type") == "ITERATIVE_PLANNING" and 
                 planner_output.get("task_is_final", False)):
                 logger.info("✅ Task marked as final by planner")
                 return True
                 
-            # Secondary check: analyze executor feedback for completion indicators
             if self.execution_history:
                 last_execution = self.execution_history[-1]
                 
-                # Check if executor explicitly indicates completion
                 if last_execution.get("status") == "SUCCESS":
                     
-                    # Check suggestions_for_planner for completion indicators
                     suggestions = last_execution.get("suggestions_for_planner", "").lower()
                     completion_phrases = [
                         "user request is now complete",
@@ -308,36 +295,22 @@ class MasterCrew:
             return False
 
     def validate_execution_efficiency(self, execution_result):
-        """
-        Validate that the execution was efficient and didn't use unnecessary tools
-        
-        Args:
-            execution_result: The execution result from the executor
-            
-        Returns:
-            dict: Validation results with warnings if inefficient usage detected
-        """
+
         warnings = []
         
         try:
-            # Check for common inefficiency patterns
             step_description = execution_result.get("step_description", "").lower()
             
-            # Pattern 1: Screenshot task that might have used HTML parser unnecessarily  
             if "screenshot" in step_description:
-                # This is a heuristic - you might want to track tool usage more explicitly
                 result_summary = execution_result.get("result_summary", "").lower()
                 if "html" in result_summary or "parsed" in result_summary:
                     warnings.append("⚠️ HTML parsing may have been unnecessary for screenshot task")
-            
-            # Pattern 2: Navigation task that might have used HTML parser
+
             if "navigate" in step_description:
                 result_summary = execution_result.get("result_summary", "").lower()
                 if "html" in result_summary or "parsed" in result_summary:
                     warnings.append("⚠️ HTML parsing may have been unnecessary for navigation task")
                     
-            # Pattern 3: Multiple tool usage warnings could be detected here
-            # You could extend this to track actual tool usage if you modify the executor output
             
             if warnings:
                 for warning in warnings:
@@ -353,13 +326,7 @@ class MasterCrew:
             return {"efficient": True, "warnings": []}
 
     def run_iterative_planner_executor(self, user_request, max_iterations=10):
-        """
-        Run Planner and Executor iteratively until task completion or max iterations
-        
-        Args:
-            user_request: The user's automation request
-            max_iterations: Maximum number of iterations to prevent infinite loops
-        """
+
         
         logger.info(f"🚀 Starting automation task: '{user_request}'")
         logger.info(f"📊 Max iterations: {max_iterations}")
@@ -378,10 +345,8 @@ class MasterCrew:
             try:
                 logger.info(f"📊 Execution history: {len(self.execution_history)} previous tasks")
                 
-                # Execute the crew
                 result = self.crew().kickoff(inputs=kickoff_inputs)
                 
-                # Get planner output for completion checking
                 planner_output = None
                 if hasattr(self.planner_task().output, 'json_dict'):
                     planner_output = self.planner_task().output.json_dict
@@ -396,7 +361,6 @@ class MasterCrew:
                 continue
 
             try:
-                # Parse and store execution result
                 json_result = result.model_dump_json()
                 if isinstance(json_result, str):
                     json_result = json.loads(json_result)
@@ -404,7 +368,6 @@ class MasterCrew:
                 final_result = json_result.get("json_dict", json_result)
                 self.execution_history.append(final_result)
                 
-                # Validate execution efficiency
                 efficiency_check = self.validate_execution_efficiency(final_result)
                 if not efficiency_check["efficient"]:
                     logger.info("💡 Consider optimizing tool usage for better performance")
@@ -415,7 +378,6 @@ class MasterCrew:
                 logger.error(f"❌ Error converting result to JSON in iteration {iteration+1}: {e}")
                 continue
 
-            # Check for task completion
             if self.is_task_complete(planner_output):
                 logger.info(f"🎉 Task completed successfully after {iteration+1} iterations")
                 logger.info(f"📋 Final result: {final_result}")
@@ -426,7 +388,6 @@ class MasterCrew:
                     "execution_history": self.execution_history
                 }
                 
-            # Check if we're at max iterations
             if iteration == max_iterations - 1:
                 logger.warning(f"⚠️ Reached maximum iterations ({max_iterations}) without completion")
                 return {
