@@ -1,7 +1,7 @@
 'use client'
 import axios, { formToJSON } from 'axios';
 import { useState, useRef, useEffect, useContext } from 'react';
-import { json } from 'stream/consumers';
+
 import { AuthContext } from './api/authcontext';
 import { useRouter } from 'next/router';
 // === SVG ICON COMPONENTS ===
@@ -150,7 +150,7 @@ export default function Home() {
         </div>
       </div>
     </div>
-  );
+  ):<></>)
 }
 
 function PlusIcon() {

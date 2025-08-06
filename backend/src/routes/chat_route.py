@@ -7,9 +7,11 @@ from src.schema import schema
 from fastapi.responses import JSONResponse
 from src.middleware.get_current_user import getCurrentUser
 from src.agents.main import run
+import nest_asyncio, asyncio
+
+nest_asyncio.apply()
 
 chatRouter=APIRouter()
-
 def get_db():
     db=SessionLocal()
     try:
@@ -22,5 +24,6 @@ def get_db():
 async def ChatResult(user_request:schema.ChatInput,db:Session=Depends(get_db),user:dict=Depends(getCurrentUser)):
     print("Request By:",user)
     result = await run(user_request)
-
+    output=result
     return JSONResponse(content=result)
+
