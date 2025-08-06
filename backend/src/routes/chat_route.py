@@ -20,6 +20,8 @@ def get_db():
         db.close()
 
 
+
+
 @chatRouter.post("/chat")
 async def ChatResult(user_request:schema.ChatInput,db:Session=Depends(get_db),user:dict=Depends(getCurrentUser)):
     print("Request By:",user)
