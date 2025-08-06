@@ -1,12 +1,15 @@
 import asyncio
-from crew import MasterCrew
-from utils.browser_manager import BrowserManager
+from src.agents.crew import MasterCrew
+from src.agents.utils.browser_manager import BrowserManager
+from src.schema import schema
 import nest_asyncio
 
 nest_asyncio.apply()
 
-async def run():
-    user_request = input("Ask me anything!! ---> ")
+async def run(chatRequest:schema.ChatInput):
+    # user_request = input("Ask me anything!! ---> ")
+
+    user_request=chatRequest.user_request
     agent_list = ["planner_agent", "executor_agent"]
     
     inputs = {
@@ -20,8 +23,9 @@ async def run():
         page = await browser_manager.start()
         my_crew = MasterCrew(PAGE=page)
         
-        my_crew.run_iterative_planner_executor(
+        result=my_crew.run_iterative_planner_executor(
             user_request=inputs["user_request"])
+        return  result
         
     finally:
         print("Closing browser...")

@@ -5,14 +5,12 @@ import json
 import yaml
 from crewai.project import CrewBase, agent, crew, task
 import logging
-from tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TakeScreenshotTool, ClickElementTool, FillInputTool
-from utils.browser_manager import BrowserManager
+from src.agents.tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TextInputTool, TakeScreenshotTool, ClickElementTool, FillInputTool
+from src.agents.utils.browser_manager import BrowserManager
 from playwright.async_api import Page
 from typing import List, Optional, Literal
 from enum import Enum
 from typing import Union
-
-from utils.browser_manager import BrowserManager 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from src.database.database import Base,engine
 from src.routes.auth_routes import authRouter
+from src.routes.chat_route import chatRouter
 import os
 from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
@@ -17,7 +18,7 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 app.include_router(authRouter,prefix="/auth")
-
+app.include_router(chatRouter)
 
 
 @app.get("/")

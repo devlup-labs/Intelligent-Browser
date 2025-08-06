@@ -1,4 +1,5 @@
 from playwright.async_api import async_playwright, Page, Browser
+import traceback
 
 class BrowserManager:
     
@@ -13,6 +14,7 @@ class BrowserManager:
             self.browser = await self.p.chromium.launch(headless=False)
             self.page = await self.browser.new_page()
         except Exception as e:
+            traceback.print_exc()  # This prints the real error to console
             await self.close()
             raise RuntimeError(f"Failed to start browser session {e}") from e
         return self.page

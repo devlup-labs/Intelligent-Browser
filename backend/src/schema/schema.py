@@ -1,3 +1,4 @@
+from typing import List, Optional,Literal
 from pydantic import BaseModel,Field,constr
 
 
@@ -12,11 +13,30 @@ class UserOutput(BaseModel):
     email:str
 
     class Config:
-        orm_mode = True #imp so that you can access user.username user.id otherwise error dega
+        model_config = {
+        "from_attributes": True
+    } #imp so that you can access user.username user.id otherwise error dega
 
 class Token(BaseModel):
     access_token:str
     token_type:str
 
 
+class ChatInput(BaseModel):
+    user_request:str
+
+
+class ChatOutputFormat(BaseModel):
+    status:str
+
+
     
+class ExecutionOutput(BaseModel):
+
+    status: Literal["SUCCESS", "FAILURE", "PARTIAL_FAILURE"] = Field(..., description="The execution status of the task.") #... means field required
+    step_description: str
+    result_summary: str 
+    error_details: Optional[str] = Field(default=None)
+    suggestions_for_planner: Optional[str] = Field(default=None)
+    outputs_created: List[str] = Field(default_factory=list)
+    next_step_context: Optional[str] = Field(default=None)

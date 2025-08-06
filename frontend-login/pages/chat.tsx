@@ -1,32 +1,12 @@
 'use client'
+import axios, { formToJSON } from 'axios';
 import { useState, useRef, useEffect, useContext } from 'react';
+import { json } from 'stream/consumers';
 import { AuthContext } from './api/authcontext';
 import { useRouter } from 'next/router';
 // === SVG ICON COMPONENTS ===
 
-function PlusIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
-      <path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM184,136H136v48a8,8,0,0,1-16,0V136H72a8,8,0,0,1,0-16h48V72a8,8,0,0,1,16,0v48h48a8,8,0,0,1,0,16Z" />
-    </svg>
-  );
-}
 
-function ChatsIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
-      <path d="M216,80H184V48a16,16,0,0,0-16-16H40A16,16,0,0,0,24,48V176a8,8,0,0,0,13,6.22L72,154V184a16,16,0,0,0,16,16h93.59L219,230.22a8,8,0,0,0,5,1.78,8,8,0,0,0,8-8V96A16,16,0,0,0,216,80Z" />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
-      <path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z" />
-    </svg>
-  );
-}
 
 export default function Home() {
   const {isLoggedIn}=useContext(AuthContext);
@@ -35,20 +15,42 @@ export default function Home() {
   const [i, setI] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState('new');
-  
+
   const navItems = [
     { id: 'new', label: 'New Chat', icon: PlusIcon },
     { id: 'previous', label: 'Previous Chats', icon: ChatsIcon },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
-  function clickEvent() {
-    if (message.trim() !== "") {
-      const result = `Response ${i}`; // This is the output of crewai agents.
-      setI(i + 1);
-      setMessages(prev => [...prev, message.trim(), result]);
-      setMessage("");
+  async function clickEvent() {
+
+    const request_data = {
+      "user_request": message
     }
+
+
+    if (message.trim() !== "") {
+      try {
+        const response = await axios.post("http://localhost:8000/chat", request_data);
+        console.log(response);
+        setI(i + 1);
+        setMessages(prev => [...prev, message.trim(), response.data]);
+        setMessage("");
+      }
+      catch (error) {
+          console.log("Error in getting Resposne from backend!!",error);
+        }
+
+    }
+    else{
+      alert("Kindly enter some text!!");
+    }
+
+
+
+
+
+
   }
 
   useEffect(() => {
@@ -148,7 +150,29 @@ export default function Home() {
         </div>
       </div>
     </div>
-              ):<></>
-    
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+      <path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM184,136H136v48a8,8,0,0,1-16,0V136H72a8,8,0,0,1,0-16h48V72a8,8,0,0,1,16,0v48h48a8,8,0,0,1,0,16Z" />
+    </svg>
+  );
+}
+
+function ChatsIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+      <path d="M216,80H184V48a16,16,0,0,0-16-16H40A16,16,0,0,0,24,48V176a8,8,0,0,0,13,6.22L72,154V184a16,16,0,0,0,16,16h93.59L219,230.22a8,8,0,0,0,5,1.78,8,8,0,0,0,8-8V96A16,16,0,0,0,216,80Z" />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+      <path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z" />
+    </svg>
   );
 }
