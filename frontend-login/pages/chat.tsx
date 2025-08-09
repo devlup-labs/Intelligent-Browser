@@ -31,10 +31,18 @@ export default function Home() {
 
     if (message.trim() !== "") {
       try {
-        const response = await axios.post("http://localhost:8000/chat", request_data);
+        const token=localStorage.getItem("token")
+        const response = await axios.post("http://localhost:8000/chat", request_data,
+          {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ Send token in header
+            'Content-Type': 'application/json',
+          },
+        }
+        );
         console.log(response);
         setI(i + 1);
-        setMessages(prev => [...prev, message.trim(), response.data]);
+        setMessages(prev => [...prev, message.trim(), JSON.stringify(response.data)]);
         setMessage("");
       }
       catch (error) {
