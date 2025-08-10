@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from src.database.database import Base,engine
 from src.routes.auth_routes import authRouter
 from src.routes.chat_route import chatRouter
+from src.models import user_model #need to do this asqlite must know about what models exist before it calls create_all to create tables
 import os
 from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
