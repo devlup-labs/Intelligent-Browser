@@ -4,18 +4,19 @@ import { useState, useRef, useEffect, useContext } from 'react';
 
 import { AuthContext } from './api/authcontext';
 import { useRouter } from 'next/router';
+import { error } from 'console';
 // === SVG ICON COMPONENTS ===
 
 
 
 export default function Home() {
-  const {isLoggedIn}=useContext(AuthContext);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<string[]>([]);
   const [i, setI] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState('new');
-
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading,setLoading]=useState(true);
   const navItems = [
     { id: 'new', label: 'New Chat', icon: PlusIcon },
     { id: 'previous', label: 'Previous Chats', icon: ChatsIcon },
@@ -31,14 +32,14 @@ export default function Home() {
 
     if (message.trim() !== "") {
       try {
-        const token=localStorage.getItem("token")
+        const token = localStorage.getItem("token")
         const response = await axios.post("http://localhost:8000/chat", request_data,
           {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ Send token in header
-            'Content-Type': 'application/json',
-          },
-        }
+            headers: {
+              Authorization: `Bearer ${token}`, //  Send token in header
+              'Content-Type': 'application/json',
+            },
+          }
         );
         console.log(response);
         setI(i + 1);
@@ -46,11 +47,11 @@ export default function Home() {
         setMessage("");
       }
       catch (error) {
-          console.log("Error in getting Resposne from backend!!",error);
-        }
+        console.log("Error in getting Resposne from backend!!", error);
+      }
 
     }
-    else{
+    else {
       alert("Kindly enter some text!!");
     }
 
@@ -64,101 +65,120 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-  const router=useRouter();
+  const router = useRouter();
   useEffect(() => {
-    if (isLoggedIn === false) {
-      router.replace('/');
+  const verifyToken = async () => {
+    const token = localStorage.getItem("token");
+    setLoading(true);
+    try {
+      const res = await axios.get("http://localhost:8000/auth/verify_jwt", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log(res.data);
+      setIsLoggedIn(true);
+    } catch (err) {
+      console.log("Invalid Token: Please log in again");
+      localStorage.removeItem("token");
+      setIsLoggedIn(false);
+    } finally {
+      setLoading(false);
     }
-  }, [isLoggedIn]);
-  
+  };
+  verifyToken();
+}, []);
+  useEffect(()=>{
+    if(!isLoggedIn&&!loading)router.push("/login");
+  },[isLoggedIn,loading])
   return (
-    isLoggedIn?(
+    isLoggedIn ? (
       <div className="relative flex min-h-screen flex-col bg-[#111418] overflow-x-hidden" style={{ fontFamily: 'Manrope, Noto Sans, sans-serif' }}>
-      <div className="layout-container flex h-full grow flex-col">
-        <div className="flex flex-1 w-full px-6 py-5 gap-4">
+        <div className="layout-container flex h-full grow flex-col">
+          <div className="flex flex-1 w-full px-6 py-5 gap-4">
 
-          <div className="layout-content-container flex flex-col w-80">
-            <div className="flex h-full min-h-[700px] flex-col justify-between bg-[#111418] p-4">
-              <div className="flex flex-col gap-4">
-                <h1 className="text-white text-base font-medium leading-normal">Options</h1>
-                <div className="flex flex-col gap-2">
-                  {navItems.map(({ id, label, icon: Icon }) => (
+            <div className="layout-content-container flex flex-col w-80">
+              <div className="flex h-full min-h-[700px] flex-col justify-between bg-[#111418] p-4">
+                <div className="flex flex-col gap-4">
+                  <h1 className="text-white text-base font-medium leading-normal">Options</h1>
+                  <div className="flex flex-col gap-2">
+                    {navItems.map(({ id, label, icon: Icon }) => (
+                      <div
+                        key={id}
+                        onClick={() => setActive(id)}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-full cursor-pointer transition-colors duration-150 ${active === id ? 'bg-[#283039]' : 'hover:bg-[#899bb6]'
+                          }`}
+                      >
+                        <div className="text-white">
+                          <Icon />
+                        </div>
+                        <p className="text-white text-sm font-medium leading-normal">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Chat Area */}
+            <div className="flex flex-1 justify-center">
+              <div className="layout-content-container flex flex-col max-w-[960px] w-full mx-auto">
+
+                {/* Header */}
+                <div className="py-5 border-b border-[#2a2f34]">
+                  <h2 className="text-white text-[28px] font-bold leading-tight px-4 text-center pb-1">
+                    Welcome to Intellibrowse!
+                  </h2>
+                  <p className="text-white text-base font-normal leading-normal px-4 text-center">
+                    Ask me anything, and I'll do my best to do that task.
+                  </p>
+                </div>
+
+                {/* Messages container */}
+                <div className="px-4 space-y-3 py-2 flex flex-col mb-16">
+                  {messages.map((msg, i) => (
                     <div
-                      key={id}
-                      onClick={() => setActive(id)}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-full cursor-pointer transition-colors duration-150 ${active === id ? 'bg-[#283039]' : 'hover:bg-[#899bb6]'
+                      key={i}
+                      className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words ${i % 2 === 0
+                        ? 'bg-[#42a742] self-end'   // User message → right side
+                        : 'bg-[#283039] self-start' // Bot message → left side
                         }`}
                     >
-                      <div className="text-white">
-                        <Icon />
-                      </div>
-                      <p className="text-white text-sm font-medium leading-normal">{label}</p>
+                      {msg}
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
                 </div>
-              </div>
-            </div>
-          </div>
-          {/* Chat Area */}
-          <div className="flex flex-1 justify-center">
-            <div className="layout-content-container flex flex-col max-w-[960px] w-full mx-auto">
 
-              {/* Header */}
-              <div className="py-5 border-b border-[#2a2f34]">
-                <h2 className="text-white text-[28px] font-bold leading-tight px-4 text-center pb-1">
-                  Welcome to Intellibrowse!
-                </h2>
-                <p className="text-white text-base font-normal leading-normal px-4 text-center">
-                  Ask me anything, and I'll do my best to do that task.
-                </p>
-              </div>
-
-              {/* Messages container */}
-              <div className="px-4 space-y-3 py-2 flex flex-col mb-16">
-                {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words ${i % 2 === 0
-                      ? 'bg-[#42a742] self-end'   // User message → right side
-                      : 'bg-[#283039] self-start' // Bot message → left side
-                      }`}
-                  >
-                    {msg}
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Fixed Input Box */}
-              <div className="fixed bottom-12 left-0 w-full px-4 ml-40">
-                <div className="max-w-[960px] mx-auto">
-                  <label className="flex h-12 w-full">
-                    <div className="flex w-full items-stretch rounded-xl h-full">
-                      <input
-                        placeholder="Type your message here..."
-                        className="form-input w-full flex-1 rounded-l-xl text-white focus:outline-0 focus:ring-0 border-none bg-[#283039] h-full placeholder:text-[#9cabba] px-4 text-base font-normal"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') clickEvent(); }}
-                      />
-                      <div className="flex bg-[#283039] items-center justify-center pr-4 rounded-r-xl">
-                        <button
-                          className="min-w-[84px] h-8 px-4 bg-[#0a65c1] text-white text-sm font-medium rounded-full hidden md:block"
-                          onClick={clickEvent}>
-                          Send
-                        </button>
+                {/* Fixed Input Box */}
+                <div className="fixed bottom-12 left-0 w-full px-4 ml-40">
+                  <div className="max-w-[960px] mx-auto">
+                    <label className="flex h-12 w-full">
+                      <div className="flex w-full items-stretch rounded-xl h-full">
+                        <input
+                          placeholder="Type your message here..."
+                          className="form-input w-full flex-1 rounded-l-xl text-white focus:outline-0 focus:ring-0 border-none bg-[#283039] h-full placeholder:text-[#9cabba] px-4 text-base font-normal"
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') clickEvent(); }}
+                        />
+                        <div className="flex bg-[#283039] items-center justify-center pr-4 rounded-r-xl">
+                          <button
+                            className="min-w-[84px] h-8 px-4 bg-[#0a65c1] text-white text-sm font-medium rounded-full hidden md:block"
+                            onClick={clickEvent}>
+                            Send
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </label>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
 
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  ):<></>)
+    ) : <></>)
 }
 
 function PlusIcon() {

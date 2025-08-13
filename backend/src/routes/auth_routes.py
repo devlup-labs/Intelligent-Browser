@@ -1,12 +1,18 @@
 from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session 
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, HTTPBearer, HTTPAuthorizationCredentials
 from src.controllers import auth
 from src.models.user_model import User
 from src.schema import schema
 from src.database.database import SessionLocal
+from jose import jwt
 from sqlalchemy import or_
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+
+security = HTTPBearer()
 
 authRouter=APIRouter()
 
@@ -73,3 +79,16 @@ def login(form_data:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_d
         "access_token":access_token,
         "token_type":"bearer"
     }
+
+@authRouter.get("/verify_jwt")
+def verify_jwt(token: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        SECRET_KEY=os.getenv("SECRET_KEY")
+        ALGORITHM=os.getenv("ALGORITHM")
+        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        return {"valid": True, "user": payload.get("subject")}
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+

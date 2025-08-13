@@ -19,7 +19,7 @@ executor:
     unnecessary operations.
     
     CRITICAL EFFICIENCY RULES:
-    - Use HTML parser ONLY when you need to find specific elements to interact with
+    - Use HTML parser after you try attempting to do any task
     - Use direct tools (Screenshot, Navigation, Scroll) for simple browser operations
     - Never retry the same tool call multiple times without clear reason
     - If a tool returns None or empty output, consider it successful unless there's an error
