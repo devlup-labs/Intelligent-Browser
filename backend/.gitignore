@@ -3,3 +3,5 @@
 
 # Ignore .env files with secrets
 .env
+
+*.db

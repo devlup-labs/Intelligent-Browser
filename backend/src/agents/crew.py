@@ -21,7 +21,7 @@ try:
     llm = LLM(
         model="gemini/gemini-2.5-flash-lite",
         api_key=os.getenv("GEMINI_API_KEY"),
-        temperature=0.7
+        temperature=0.7,
     )
     logger.info("CrewAI LLM initialized successfully")
 except Exception as e:
