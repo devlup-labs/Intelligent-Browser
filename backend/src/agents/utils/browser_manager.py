@@ -1,3 +1,5 @@
+import asyncio
+import platform
 from playwright.async_api import async_playwright, Page, Browser
 import traceback
 
@@ -10,6 +12,10 @@ class BrowserManager:
 
     async def start(self) -> Page:
         try:
+            # Set the correct event loop policy for Windows
+            if platform.system() == "Windows":
+                asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+            
             self.p = await async_playwright().start()
             self.browser = await self.p.chromium.launch(headless=False)
             self.page = await self.browser.new_page()
