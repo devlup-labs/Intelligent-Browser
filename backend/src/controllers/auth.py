@@ -1,4 +1,5 @@
 from argon2 import PasswordHasher, exceptions
+from passlib.context import CryptContext 
 #better than bcrypt. Bycrpt is a hasing algorithm manlo aage jake algo change karna ho to isliye hum ye use karte
 from datetime import datetime,timedelta
 from fastapi import HTTPException
@@ -24,6 +25,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return ph.verify(hashed_password, plain_password)
     except exceptions.VerifyMismatchError:
         return False
+
 
 # ALGORITHM=(os.getenv("ALGORITHM"))
 # EXPIRY_TIME=(int)(os.getenv("ACCESS_TOKEN_EXPIRY"))

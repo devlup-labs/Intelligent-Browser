@@ -1,6 +1,7 @@
 from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session 
 from fastapi.security import OAuth2PasswordRequestForm, HTTPBearer, HTTPAuthorizationCredentials
+
 from src.controllers import auth
 from src.models.user_model import User
 from src.schema import schema
@@ -32,12 +33,14 @@ def signup(user:schema.UserCreateSignup,db:Session=Depends(get_db)):
         User.email==user.email
     )).first()
     if(existing_user):
+
         raise HTTPException(
     
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username or Email already Exists!"
         )
     #No user Exist means new user
+
     hashedPassword=auth.hash_password(user.password)
 
     new_user = User(
@@ -56,6 +59,7 @@ def signup(user:schema.UserCreateSignup,db:Session=Depends(get_db)):
 # NOTE: OAuth2PasswordRequestForm expects 'username' field - frontend should send email as username
 @authRouter.post("/login",response_model=schema.Token)
 def login(form_data:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
+
 
 
     if not form_data.username.strip() or not form_data.password.strip():

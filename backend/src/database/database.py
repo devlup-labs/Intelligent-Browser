@@ -9,4 +9,5 @@ engine=create_engine(os.getenv("DATABASE_URL"),connect_args={"check_same_thread"
 
 SessionLocal=sessionmaker(bind=engine,autoflush=False,autocommit=False,)
 
+
 Base=declarative_base()

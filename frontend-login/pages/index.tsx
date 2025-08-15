@@ -13,6 +13,7 @@ export default function home(){
                     </Link>
                     <Link href="/signup">
                     <button className="w-32 px-8 py-3 bg-blue-800 bg-opacity-30 hover:bg-blue-900 text-white text-lg rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 "aria-label= "Navigate to login page">Sign Up</button>
+
                     </Link>
 
                 </div>

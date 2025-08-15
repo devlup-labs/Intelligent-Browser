@@ -7,6 +7,7 @@ import {AuthContext} from "./api/authcontext"
 
 export default function loginpage() {
     const { login, logout }=useContext(AuthContext);
+
     const router= useRouter();
     const [email, setEmail]= useState("");
     const [password, setPassword]= useState("");
@@ -33,6 +34,7 @@ export default function loginpage() {
         } catch (err: any) {
             alert("Login failed: "+ err.response?.data?.detail || err.message);
             logout();
+
         }
 
     };
@@ -45,6 +47,7 @@ export default function loginpage() {
                 </h1>
                 <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
                 <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
+
                 <button onClick={forlogin} className="w-full px-8 py-3 bg-blue-800 bg-opacity-20 hover:bg-blue-900 text-white text-lg rounded-lg transition">Continue</button>
             </div>
         </div>

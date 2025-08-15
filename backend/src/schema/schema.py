@@ -1,4 +1,5 @@
 from typing import List, Optional,Literal
+
 from pydantic import BaseModel,Field,constr
 
 
@@ -16,6 +17,7 @@ class UserOutput(BaseModel):
         model_config = {
         "from_attributes": True
     } #imp so that you can access user.username user.id otherwise error dega
+
 
 class Token(BaseModel):
     access_token:str
@@ -40,4 +42,3 @@ class ExecutionOutput(BaseModel):
     suggestions_for_planner: Optional[str] = Field(default=None)
     outputs_created: List[str] = Field(default_factory=list)
     next_step_context: Optional[str] = Field(default=None)
-

@@ -43,6 +43,7 @@ export default function signuppage() {
             alert(errorMessage);
         } finally {
             setLoading(false);
+
         }
     };
 
@@ -55,6 +56,7 @@ export default function signuppage() {
                     <input type="text" name="username" placeholder="Username" value={form.username} onChange={handleChange} required className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
                 <input type="email" placeholder="Email" name="email" value={form.email} onChange={handleChange} required className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
                 <input type="password" placeholder="Password" name="password" value={form.password} required onChange={handleChange} className="w-full p-3 rounded bg-gray-700 focus:outline-none focus:ring-blue-500" />
+
                 <button type="submit" className="w-full px-8 py-3 bg-blue-800 bg-opacity-20 hover:bg-blue-900 text-white text-lg rounded-lg transition">Continue</button>
             </form>
             </div>
