@@ -242,7 +242,7 @@ class MasterCrew:
             tasks=self.tasks,
             process=Process.sequential,
             verbose=True,
-            memory=False #chromadb needs openai api key to work so not useful
+            memory=False,
         )
             return self.crew_instance
     

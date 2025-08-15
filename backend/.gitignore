@@ -4,4 +4,11 @@
 # Ignore .env files with secrets
 .env
 
+# database
 *.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
