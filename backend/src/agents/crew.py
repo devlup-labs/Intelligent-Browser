@@ -5,23 +5,12 @@ import json
 import yaml
 from crewai.project import CrewBase, agent, crew, task
 import logging
-<<<<<<< HEAD
 from src.agents.tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TakeScreenshotTool, ClickElementTool, FillInputTool
 from src.agents.utils.browser_manager import BrowserManager
-=======
-from tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TextInputTool, TakeScreenshotTool
-from utils.browser_manager import BrowserManager
->>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
 from playwright.async_api import Page
 from typing import List, Optional, Literal
 from enum import Enum
 from typing import Union
-<<<<<<< HEAD
-=======
-# from examples.planner_agent_example import examples
-
-from utils.browser_manager import BrowserManager 
->>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -83,10 +72,7 @@ class IterativePlanning(BaseModel):
     steps: List[Step]
     current_task: Step
     remaining_work: str
-<<<<<<< HEAD
     task_is_final: bool = False
-=======
->>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
 
 
 # Unified Planner Output Format
@@ -172,7 +158,6 @@ class MasterCrew:
                 description=self.tools_config['text_delete_tool']['description'],
                 page=self.page
             )
-<<<<<<< HEAD
 
             self.click_element_tool = ClickElementTool(
                 name=self.tools_config['click_element_tool']['name'],
@@ -183,11 +168,6 @@ class MasterCrew:
             self.fill_input_tool = FillInputTool(
                 name=self.tools_config['fill_input_tool']['name'],
                 description=self.tools_config['fill_input_tool']['description'],
-=======
-            self.text_input_tool = TextInputTool(
-                name=self.tools_config['text_input_tool']['name'],
-                description=self.tools_config['text_input_tool']['description'],
->>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
                 page=self.page
             )
 
@@ -220,7 +200,6 @@ class MasterCrew:
                    self.hover_element_tool,
                    self.get_current_url,
                    self.go_back_tool,
-<<<<<<< HEAD
                    self.reload_page_tool,self.select_dropdown_tool,
                    self.scroll_page_tool,
                    self.double_click_tool,
@@ -228,9 +207,6 @@ class MasterCrew:
                    self.click_element_tool,
                    self.fill_input_tool],
             output_json=ExecutorOutputFormat,
-=======
-                   self.reload_page_tool,self.select_dropdown_tool],
->>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
             llm=llm,
             verbose=True,
         )
@@ -266,7 +242,6 @@ class MasterCrew:
             tasks=self.tasks,
             process=Process.sequential,
             verbose=True,
-<<<<<<< HEAD
             memory=False,
         )
             return self.crew_instance
@@ -421,69 +396,3 @@ class MasterCrew:
             "iterations": max_iterations,
             "execution_history": self.execution_history
         }
-=======
-            memory=False #chromadb needs openai api key to work so not useful
-        )
-            return self.crew_instance
-    
-    # There is a issue over here in the fact that every time a its a new crew that is called memory remians only with one crew so this can create a problem
-    #And the same issue exists with task as well if we cache just the same crew still the task creation is new very time
-    #We want purana task only but with new context
-    def run_iterative_planner_executor(self,user_request,max_iterations=2):
-        """It will run Planner and Executor iteratively"""
-
-        for iteration in range(max_iterations):
-            logger.info(f"Starting iteration {iteration+1}")
-
- 
-            kickoff_inputs={
-                "user_request":user_request,
-                "agents_list":["executor_agent"],
-                "execution_feedback":self.execution_history[-1] if self.execution_history else None,
-                "progress_state":f"Iteration {iteration+1},completed {len(self.execution_history)} tasks",
-                "iteration":iteration+1,
-            }
-
-            try:
-                print("---------------------Execution History-------------------------")
-                print(self.execution_history)
-                result=self.crew().kickoff(inputs=kickoff_inputs)
-                print(self.planner_task().output)
-                print("------------------------------RESULT-----------------------------------------")
-                print(result)
-                print("------------------------------RESULT PRINED-----------------------------------------")
-            except Exception as e:
-                logger.error(f"Error in iteration {iteration+1}: {e}")
-                continue
-            try:
-                json_result = result.model_dump_json()
-                # print(type(json_result))
-                if isinstance(json_result, str):
-                    json_result = json.loads(json_result)
-                final_result = json_result["json_dict"]
-                self.execution_history.append(final_result)
-                # print(type(final_result))
-                print(final_result)
-            except Exception as e:
-                logger.error(f"Error converting result to JSON: {e}")
-                continue
-
-            # TODO : Need to think how it needs to end
-            # if(self.is_task_complete(executor_output.json_dict,user_request)):
-            #     logger.info(f"Task Completed SuccessFully after {iteration+1} iterations")
-            #     break
-                
-    # def is_task_complete(self,execution_output,user_request):
-    #     if execution_output.get("status") == 'SUCCESS':
-    #         # Check if this is truly the final task completion
-    #         result_summary = execution_output.get('result_summary', '').lower()
-    #         next_step_context = execution_output.get('next_step_context', '').lower()
-            
-    #         # More robust completion detection
-    #         completion_indicators = ['completed', 'finished', 'done', 'successful', 'final']
-    #         no_next_steps = any(phrase in next_step_context for phrase in ['no further', 'complete', 'finished'])
-            
-    #         if (any(indicator in result_summary for indicator in completion_indicators) or no_next_steps):
-    #             return True
-    #         return False
->>>>>>> ac16ed6 (Agent code restructuring, tools integration and improved system prompt by Aryan, Akhil and myself)
