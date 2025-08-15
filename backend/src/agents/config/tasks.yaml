@@ -164,7 +164,7 @@ execution_task:
       "result_summary": "concise summary of what happened",
       "error_details": "detailed explanation if status is not SUCCESS",
       "suggestions_for_planner": "recommendations for next step adaptation, or indicate if user request is now complete",
-      "outputs_created": ["list of any files/results produced"],
+      "outputs_created": ["list of any files/results produced. Take help from {{planner_output.raw.output["progress_analysis"]}}, the name of the file might be mentioned there"],
       "next_step_context": "any important context for the next step (avoid passing HTML_PARSER_TOOL output), or 'Task completed - user request fulfilled' if this was the final step"
     }
 
@@ -181,3 +181,31 @@ execution_task:
     - "HTML parser tool used ONLY when interacting with specific webpage elements"
     - "No redundant tool calls or HTML parser calls for simple browser actions"
     - "No retrying identical tool calls multiple times"
+
+output_task:
+  agent: output
+  description: >
+    Convert the raw JSON results from {{execution_task.output}} and {{planner_task.output}} into a natural, human-readable narrative.
+    Present the overall task status, step descriptions, results, outputs created, errors (if any), and planner insights as flowing paragraphs.
+    Only include images, screenshots, or other media if the user explicitly requested them and they exist.
+    If an image is included, the relative path of the <img> tag src='/home/jainam/Documents/intellibrowse1/Intelligent-Browser/backend/{{execution_output.raw.output["outputs_created"]}}' and height and width of image should be 50 px each.
+    The final output should be stored in a single JSON field called "answer" and should contain HTML code only.
+  input_variables:
+    - execution_task.output
+    - planner_task.output
+  expected_output: |
+    A JSON object containing a single field "answer" where the value is an HTML string in narrative style:
+    - Overall task completion status is described naturally
+    - Paragraphs narrate what was done, what was achieved, any outputs generated, and any errors
+    - Planner insights are integrated naturally into the text
+    - Next steps or confirmation of task completion are included
+    - HTML uses <p>, <br>, <img>, <video>, <audio>, and <a> where appropriate (only include media if explicitly requested and available; for images, src='/home/jainam/Documents/intellibrowse1/Intelligent-Browser/backend/{{execution_output.raw.output["outputs_created"]}}').
+    -In case {{execution_output.raw.output["outputs_created"]}} is empty, check {planner_output.raw.output["progress_analysis"]} for the file name if there exists, and use src='/home/jainam/Documents/intellibrowse1/Intelligent-Browser/backend/{{execution_output.raw.output["outputs_created"]}}' of img tag
+    - All HTML is contained in a single-line JSON string
+    -In HTML Content, don't mention info about tools and agents and tasks which are backend part, keep the output as user friendly with not much details on how it is happening
+  validation_criteria:
+    - "Correctly parses execution_task.output and planner_task.output"
+    - "Integrates all relevant information into a cohesive, narrative paragraph style"
+    - "Mentions outputs and errors in context"
+    - "HTML is valid and contained in a single-line JSON string under 'answer'"
+    - "No raw JSON is shown in the narrative; it reads like a human-friendly ChatGPT explanation"

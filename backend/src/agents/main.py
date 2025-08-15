@@ -10,7 +10,7 @@ async def run(chatRequest:schema.ChatInput):
     # user_request = input("Ask me anything!! ---> ")
 
     user_request=chatRequest.user_request
-    agent_list = ["planner_agent", "executor_agent"]
+    agent_list = ["planner_agent", "output", "executor_agent", "output"]
     
     inputs = {
         "user_request": user_request,

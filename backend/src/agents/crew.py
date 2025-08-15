@@ -11,6 +11,7 @@ from playwright.async_api import Page
 from typing import List, Optional, Literal
 from enum import Enum
 from typing import Union
+import genai
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ try:
     llm = LLM(
         model="gemini/gemini-2.5-flash-lite",
         api_key=os.getenv("GEMINI_API_KEY"),
-        temperature=0.7
+        temperature=0.7,
     )
     logger.info("CrewAI LLM initialized successfully")
 except Exception as e:
@@ -40,6 +41,9 @@ class ExecutorOutputFormat(BaseModel):
     suggestions_for_planner: Optional[str] = None
     outputs_created: List[str] = Field(default_factory=list)
     next_step_context: Optional[str] = None
+
+class FinalOutputFormat(BaseModel):
+    answer:str
 
 class StepStatus(str, Enum):
     PENDING = "PENDING"
@@ -90,6 +94,7 @@ class MasterCrew:
         self.crew_instance=None
         self._planner_task=None
         self._executor_task=None
+        self._output_task = None
 
         try:
             config_dir = os.path.join(os.path.dirname(__file__), "config")
@@ -200,7 +205,8 @@ class MasterCrew:
                    self.hover_element_tool,
                    self.get_current_url,
                    self.go_back_tool,
-                   self.reload_page_tool,self.select_dropdown_tool,
+                   self.reload_page_tool,
+                   self.select_dropdown_tool,
                    self.scroll_page_tool,
                    self.double_click_tool,
                    self.text_delete_tool,
@@ -211,26 +217,49 @@ class MasterCrew:
             verbose=True,
         )
 
+    @agent
+    def output(self) -> Agent:
+        return Agent(
+            config=self.agents_config["output"],
+            tools=[],
+            llm=llm,
+            verbose=True,
+            output_json=FinalOutputFormat  # Output agent produces plain text, not JSON schema
+        )
+
     @task
     def planner_task(self) -> Task:
-        if(self._planner_task is None):
-            self._planner_task= Task(
-            config=self.tasks_config["planner_task"],
-            agent=self.planner_agent(),
-            output_json=PlannerOutputFormat,
-        )
-        return self._planner_task #if not new return ongoing one it will have earlier idea
-    
+        if self._planner_task is None:
+            self._planner_task = Task(
+                config=self.tasks_config["planner_task"],
+                agent=self.planner_agent(),
+                output_json=PlannerOutputFormat,
+            )
+        return self._planner_task  # if not new return ongoing one it will have earlier idea
+
     @task
     def execution_task(self) -> Task:
-        if(self._executor_task is None):
-            self._executor_task=Task(
-            config=self.tasks_config["execution_task"],
-            agent=self.executor_agent(),
-            context=[self.planner_task()],
-            output_json=ExecutorOutputFormat,
-        )
+        if self._executor_task is None:
+            self._executor_task = Task(
+                config=self.tasks_config["execution_task"],
+                agent=self.executor_agent(),
+                context=[self.planner_task()],
+                output_json=ExecutorOutputFormat,
+            )
         return self._executor_task
+
+    @task
+    def output_task(self) -> Task:
+        if self._output_task is None:
+            self._output_task = Task(
+                config=self.tasks_config["output_task"],
+                agent=self.output(),
+                context=[self.execution_task(),self.planner_task()],  # Pass execution results
+                input_variables=["execution_task.output","planner_task.output"],  # Feed the raw JSON result
+                output_json=FinalOutputFormat,
+            )
+        return self._output_task
+
     
     @crew
     def crew(self) -> Crew:
@@ -372,12 +401,50 @@ class MasterCrew:
             if self.is_task_complete(planner_output):
                 logger.info(f"🎉 Task completed successfully after {iteration+1} iterations")
                 logger.info(f"📋 Final result: {final_result}")
-                return {
-                    "status": "COMPLETED",
-                    "iterations": iteration + 1,
-                    "final_result": final_result,
-                    "execution_history": self.execution_history
-                }
+                if hasattr(self.output_task().output, 'json_dict'):
+                    output_data = self.output_task().output.json_dict
+                elif hasattr(self.output_task().output, 'model_dump'):
+                    output_data = self.output_task().output.model_dump()
+                else:
+                    output_data = None
+                #if output_data:
+                    # prompt_text = f"""
+                    # You are an Output Agent. Answer the user's question in plain English and provide a human-readable HTML response.
+                    # Do not include logs or tables. Render images, videos, and audio appropriately.
+                    # Here is the task result JSON: {output_data}
+                    # """
+                    
+                    # # Correct way: use llm.generate()
+                    # llm_response = llm.generate(
+                    #     prompt=prompt_text,
+                    #     max_output_tokens=1000  # optional, adjust as needed
+                    # )
+
+                    # # Extract the text output
+                    # # CrewAI LLM returns a list of generations
+                    # new_answer = ""
+                    # if llm_response.generations and len(llm_response.generations) > 0:
+                    #     new_answer = llm_response.generations[0].text.strip()
+
+                    # # Append to final answer
+                    # if not hasattr(self, "final_answer"):
+                    #     self.final_answer = ""
+
+                    # self.final_answer += new_answer
+                    # return self.final_answer
+
+
+                # Get the new answer from Output Agent
+                new_answer = output_data["answer"] if output_data else ""
+
+                # Append it to existing final output
+                if not hasattr(self, "final_answer"):
+                    self.final_answer = ""  # Initialize once
+
+                self.final_answer += str(new_answer)  # Append instead of overwrite
+
+                return self.final_answer
+
                 
             if iteration == max_iterations - 1:
                 logger.warning(f"⚠️ Reached maximum iterations ({max_iterations}) without completion")
