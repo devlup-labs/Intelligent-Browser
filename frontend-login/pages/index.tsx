@@ -9,11 +9,11 @@ export default function home(){
 
                 <div className="flex flex-col space-y-4 w-full items-center">
                     <Link href="/login">
-
-                    <button className="w-32 px-8 py-3 bg-blue-800 bg-opacity-20 hover:bg-blue-900 text-white text-lg rounded-lg transition">Login</button>
+                    <button className="w-32 px-8 py-3 bg-blue-800 bg-opacity-20 hover:bg-blue-900 text-white text-lg rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 "aria-label= "Navigate to login page">Login</button>
                     </Link>
                     <Link href="/signup">
-                    <button className="w-32 px-8 py-3 bg-blue-800 bg-opacity-30 hover:bg-blue-900 text-white text-lg rounded-lg transition">Sign Up</button>
+                    <button className="w-32 px-8 py-3 bg-blue-800 bg-opacity-30 hover:bg-blue-900 text-white text-lg rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 "aria-label= "Navigate to login page">Sign Up</button>
+
                     </Link>
 
                 </div>

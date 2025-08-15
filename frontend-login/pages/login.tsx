@@ -2,10 +2,11 @@ import Link from "next/link";
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/router";
-
-
+import { useContext } from "react";
+import {AuthContext} from "./api/authcontext"
 
 export default function loginpage() {
+    const { login, logout }=useContext(AuthContext);
 
     const router= useRouter();
     const [email, setEmail]= useState("");
@@ -27,10 +28,13 @@ export default function loginpage() {
 
 
             const {access_token} = response.data;
+            login();
             localStorage.setItem("token", access_token);
-            router.push("/dashboard");
+            router.push("/chat");
         } catch (err: any) {
             alert("Login failed: "+ err.response?.data?.detail || err.message);
+            logout();
+
         }
 
     };
