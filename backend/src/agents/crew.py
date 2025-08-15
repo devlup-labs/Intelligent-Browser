@@ -5,7 +5,7 @@ import json
 import yaml
 from crewai.project import CrewBase, agent, crew, task
 import logging
-from src.agents.tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TakeScreenshotTool, ClickElementTool, FillInputTool
+from src.agents.tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GetElementPositionTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TakeScreenshotTool, ClickElementTool, FillInputTool
 from src.agents.utils.browser_manager import BrowserManager
 from playwright.async_api import Page
 from typing import List, Optional, Literal
@@ -105,12 +105,16 @@ class MasterCrew:
                 description=self.tools_config['goto_page_tool']['description'],
                 page=self.page
             )
-
-            self.fetch_and_clean_html_tool = FetchAndCleanHTMLTool(
-                name=self.tools_config['fetch_and_clean_html_tool']['name'],
-                description=self.tools_config['fetch_and_clean_html_tool']['description'],
-                page=self.page
+            self.get_element_position_tool = GetElementPositionTool(
+                name=self.tools_config['get_element_position_tool']['name'],
+                description=self.tools_config['get_element_position_tool']['description'],
             )
+
+            # self.fetch_and_clean_html_tool = FetchAndCleanHTMLTool(
+            #     name=self.tools_config['fetch_and_clean_html_tool']['name'],
+            #     description=self.tools_config['fetch_and_clean_html_tool']['description'],
+            #     page=self.page
+            # )
             self.take_screenshot_tool = TakeScreenshotTool(
                 name=self.tools_config['take_screenshot_tool']['name'],
                 description=self.tools_config['take_screenshot_tool']['description'],
@@ -196,7 +200,7 @@ class MasterCrew:
             config=self.agents_config["executor"],
             tools=[self.goto_page_tool,
                    self.take_screenshot_tool,
-                   self.fetch_and_clean_html_tool,
+                   self.get_element_position_tool,
                    self.hover_element_tool,
                    self.get_current_url,
                    self.go_back_tool,

@@ -2,6 +2,7 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from playwright.async_api import Page, Error as PlaywrightError
 from bs4 import BeautifulSoup, NavigableString, Comment
+import requests
 import re
 from typing import Dict, List, Optional
 
@@ -283,6 +284,51 @@ class ScrollPageTool(BaseTool):
             return f"Failed to scroll due to browser error: {e}"
         except TimeoutError as e:
             return f"Scroll action timed out: {e}"
+        
+class GetElementPositionSchema(BaseModel):
+    task: str = Field(..., description="The task to perform, e.g., 'get position of element with selector #my-element'")
+    image_path: str = Field(..., description="Path to the image file where the element position will be saved")
+
+class GetElementPositionTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = GetElementPositionSchema
+    
+    async def _run(self, task: str, image_path: str) -> str:
+        url = "http://127.0.0.1:5000/process-image/"  # Updated endpoint name
+        print(image_path)
+        
+        try:
+            # Open and read the image file
+            with open(image_path, 'rb') as image_file:
+                # Prepare the files and data for multipart/form-data request
+                files = {
+                    'file': ('image.jpg', image_file, 'image/jpeg')  # (filename, file_obj, content_type)
+                }
+                data = {
+                    'task': task,
+                    'history': ""  # You can modify this as needed
+                }
+                
+                # Make the POST request with multipart/form-data
+                response = requests.post(url, files=files, data=data)
+                response.raise_for_status()  # This will raise an HTTPError for bad responses (4xx or 5xx)
+
+                # Check if the response content is valid JSON before parsing
+                if response.headers.get('Content-Type', '').startswith('application/json'):
+                    # Return the JSON response as a string
+                    return str(response.json())
+                else:
+                    return response.text
+
+        except FileNotFoundError:
+            return f"Image file not found: {image_path}"
+        except requests.exceptions.RequestException as e:
+            return f"An error occurred during the request: {e}"
+        except Exception as e:
+            return f"An unexpected error occurred: {e}"
+
+
 
 
 class FetchAndCleanHTMLTool(BaseTool):

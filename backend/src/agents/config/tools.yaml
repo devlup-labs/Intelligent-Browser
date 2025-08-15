@@ -6,13 +6,13 @@ goto_page_tool:
     The input must be a single, complete URL.
 
 
-fetch_and_clean_html_tool:
-  name: "Fetch and Clean HTML Content"
-  description: >-
-    A tool to extract HTML content from a webpage and clean it for LLM processing.
-    Automatically detects interactive elements with positioning data, removes unwanted 
-    content (scripts, styles), and structures the output for AI consumption. 
-    The input must be a single, complete URL.
+# fetch_and_clean_html_tool:
+#   name: "Fetch and Clean HTML Content"
+#   description: >-
+#     A tool to extract HTML content from a webpage and clean it for LLM processing.
+#     Automatically detects interactive elements with positioning data, removes unwanted 
+#     content (scripts, styles), and structures the output for AI consumption. 
+#     The input must be a single, complete URL.
 
 click_element_tool:
   name: "Click Element"
@@ -71,7 +71,7 @@ take_screenshot_tool:
   name: "Take Screenshot"
   description: >-
     A tool to take a screenshot of the current page in the web browser.
-    Use this when you need to capture the current view of the webpage.
+    Use this when you need to get screenshot of the browser and then use get element tool by parsing this screenshot to get the interactive element which can be used to perform the current task.
     The screenshot will be saved with a specified filename.
 
 chat_tool:
@@ -102,3 +102,9 @@ scroll_page_tool:
     Provide the direction to scroll ('up' or 'down').
     Example: {"direction": "down"},{"direction": "up"}.
     Don't give any input other than up or down.
+
+get_element_position_tool:
+  name: "Get Element Position"
+  description: >-
+    This tool takes a screenshot(taken by Take Screenshot Tool) and a task as input, then identifies and returns the coordinates of the specific element on the page that needs to be interacted with to complete the task.
+    The task given should be a clear instruction on what the agent wants to do so it can give the appropriate element position.
