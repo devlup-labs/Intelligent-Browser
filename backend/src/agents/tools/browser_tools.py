@@ -1,8 +1,10 @@
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from playwright.async_api import Page, Error as PlaywrightError
+from ...routes.screenshot_route import screenshot_dir
 from bs4 import BeautifulSoup, NavigableString, Comment
 import re
+import time
 from typing import Dict, List, Optional
 
 class GoToPageSchema(BaseModel):
@@ -54,7 +56,7 @@ class TakeScreenshotTool(BaseTool):
         try:
             screenshot_options = {
                 "full_page": full_page,
-                "path": ss_name if ss_name.endswith('.png') else f"{ss_name}.png"
+                "path": str(screenshot_dir/ss_name)
             }
             screenshot_bytes = await self.page.screenshot(**screenshot_options)
             # base64_image = base64.b64encode(screenshot_bytes).decode('utf-8')
@@ -65,10 +67,11 @@ class TakeScreenshotTool(BaseTool):
             # - Read text content and navigation menus
             # - Determine the next action to take
             # - Locate specific elements for clicking or interaction"""
+            return ss_name
         except PlaywrightError as e:
             return f"Failed to take screenshot due to browser error: {e}"
         except Exception as e:
-            return f"An unexpected error occurred while taking screenshot: {e}"
+            return f"An unexpected error occurred while taking screenshot: {e}"
 
 class HoverElementInput(BaseModel):
     selector: str
@@ -686,5 +689,4 @@ class FetchAndCleanHTMLTool(BaseTool):
             'text': text_content,
             'type': 'interactive'
         }
-
 

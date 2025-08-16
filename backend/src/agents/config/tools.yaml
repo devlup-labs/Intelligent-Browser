@@ -70,9 +70,16 @@ select_dropdown_tool:
 take_screenshot_tool:
   name: "Take Screenshot"
   description: >-
-    A tool to take a screenshot of the current page in the web browser.
-    Use this when you need to capture the current view of the webpage.
-    The screenshot will be saved with a specified filename.
+    Capture a screenshot of the current webpage view.
+
+    The caller MUST provide a `filename` (e.g., "screenshot_123.png").
+    The screenshot will be saved inside the configured screenshots directory
+    (mounted in FastAPI at `/screenshots`).
+
+    The tool will return the exact `filename` that was saved.
+    The executor MUST include this filename in `outputs_created`
+    so downstream tasks (like the output agent) can correctly render it.
+
 
 chat_tool:
   name: "Chat with User"
