@@ -1,6 +1,7 @@
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from playwright.async_api import Page, Error as PlaywrightError
+#from backend.model_ss import process_image_request
 from bs4 import BeautifulSoup, NavigableString, Comment
 import requests
 import re
@@ -45,7 +46,7 @@ class SelectDropdownInput(BaseModel):
 class EmptySchema(BaseModel):
     pass  
 
-class TakeScreenshotTool(BaseTool):
+'''class TakeScreenshotTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel] = TakeScreenshotSchema
@@ -69,7 +70,49 @@ class TakeScreenshotTool(BaseTool):
         except PlaywrightError as e:
             return f"Failed to take screenshot due to browser error: {e}"
         except Exception as e:
-            return f"An unexpected error occurred while taking screenshot: {e}"
+            return f"An unexpected error occurred while taking screenshot: {e}"'''
+
+
+import os
+from playwright.async_api import Page, Error as PlaywrightError
+
+class TakeScreenshotTool(BaseTool):
+    name: str
+    description: str
+    args_schema: type[BaseModel] = TakeScreenshotSchema
+    page: Page
+
+    async def _run(self, ss_name: str, full_page: bool) -> str:
+        try:
+            # Get the tools directory (same directory as this file)
+            tools_dir = os.path.dirname(os.path.abspath(__file__))
+
+            # Ensure filename ends with .png
+            filename = ss_name if ss_name.endswith('.png') else f"{ss_name}.png"
+
+            # Full path to save the screenshot
+            screenshot_path = os.path.join(tools_dir, filename)
+
+            # Take the screenshot
+            screenshot_bytes = await self.page.screenshot(path=screenshot_path, full_page=full_page)
+
+            # Optional: return a description with the path
+            # base64_image = base64.b64encode(screenshot_bytes).decode('utf-8')
+            # return f"""Image: data:image/png;base64,{base64_image}
+            # The screenshot shows the current state of the webpage. You can now:
+            # - Analyze the visual content and layout
+            # - Identify buttons, links, forms, and interactive elements
+            # - Read text content and navigation menus
+            # - Determine the next action to take
+            # - Locate specific elements for clicking or interaction"""
+
+            return f"Screenshot saved at: {screenshot_path}"
+
+        except PlaywrightError as e:
+            return f"Failed to take screenshot due to browser error: {e}"
+        except Exception as e:
+            return f"An unexpected error occurred while taking screenshot: {e}"
+
 
 class HoverElementInput(BaseModel):
     selector: str
@@ -285,51 +328,52 @@ class ScrollPageTool(BaseTool):
         except TimeoutError as e:
             return f"Scroll action timed out: {e}"
         
+
+
 class GetElementPositionSchema(BaseModel):
     task: str = Field(..., description="The task to perform, e.g., 'get position of element with selector #my-element'")
-    image_path: str = Field(..., description="Path to the image file where the element position will be saved")
+    image_path: str = Field(..., description="Path to the image file where the element is stored")
+
 
 class GetElementPositionTool(BaseTool):
-    name: str
-    description: str
+    name: str = "get_element_position"
+    description: str = "Uploads an image and task to the backend FastAPI server to get element position."
     args_schema: type[BaseModel] = GetElementPositionSchema
+
     
+
     async def _run(self, task: str, image_path: str) -> str:
-        url = "http://127.0.0.1:5000/process-image/"  # Updated endpoint name
-        print(image_path)
-        
+        #url = "http://10.36.16.15:8080/process-image/"   # FastAPI backend endpoint
+        url="http://127.0.0.2:8080/process-image/"   # FastAPI backend endpoint
+
         try:
-            # Open and read the image file
-            with open(image_path, 'rb') as image_file:
-                # Prepare the files and data for multipart/form-data request
+            # Open the image file safely
+
+            with open(image_path, "rb") as image_file:
                 files = {
-                    'file': ('image.jpg', image_file, 'image/jpeg')  # (filename, file_obj, content_type)
+                    "file": (image_path.split("/")[-1], image_file, "image/jpeg")
                 }
                 data = {
-                    'task': task,
-                    'history': ""  # You can modify this as needed
+                    "task": task,
+                    "history": ""   # Add actual history if needed
                 }
-                
-                # Make the POST request with multipart/form-data
-                response = requests.post(url, files=files, data=data)
-                response.raise_for_status()  # This will raise an HTTPError for bad responses (4xx or 5xx)
 
-                # Check if the response content is valid JSON before parsing
-                if response.headers.get('Content-Type', '').startswith('application/json'):
-                    # Return the JSON response as a string
-                    return str(response.json())
+                # Send POST request to backend
+                response = requests.post(url, files=files, data=data)
+                response.raise_for_status()
+
+                # Parse JSON response
+                if response.headers.get("Content-Type", "").startswith("application/json"):
+                    return response.json().get("action_code", "No action_code in response")
                 else:
                     return response.text
 
         except FileNotFoundError:
             return f"Image file not found: {image_path}"
         except requests.exceptions.RequestException as e:
-            return f"An error occurred during the request: {e}"
+            return f"Request error: {str(e)}"
         except Exception as e:
-            return f"An unexpected error occurred: {e}"
-
-
-
+            return f"Unexpected error: {str(e)}"
 
 class FetchAndCleanHTMLTool(BaseTool):
     name: str 
