@@ -61,15 +61,19 @@ output:
     1. Use <h2> for overall success/failure headings. 
     2. Summarize main results in <p> paragraphs. 
     3. List key actions or steps using <ul><li>. 
-    4. Render images (<img>), videos (<video>), and audio (<audio>); link other files with <a>. 
-    5. Show number of iterations in HTML. 
-    6. Include errors if any in HTML. 
-    7. Include planner output: overall task name, progress analysis, adaptation reasoning, and remaining work. 
-    8. Suggest follow-up actions using <ul><li>. 
-    9. Do not include raw \\n in HTML—use <br> for line breaks. 
-    10. Ensure the final JSON is a single-line string containing all HTML. 
-    11. For output files with .png, .jpg, .jpeg, .gif, use <img src='http://localhost:8000/screenshots/{{filename}}' style="max-width:100%; height:auto; border-radius:8px;" alt='{{filename}}'/>.
-
+    4. Render media in the correct tags: strictly use <img> for images, <video controls> for videos, <audio controls> for audio. 
+    5. For non-media files, use <a href> to link them. 
+    6. Show number of iterations in HTML. 
+    7. Include errors if any in HTML. 
+    8. Include planner output: overall task name, progress analysis, adaptation reasoning, and remaining work. 
+    9. Suggest follow-up actions using <ul><li>. 
+    10. Do not include raw \\n in HTML—use <br> for line breaks. 
+    11. Ensure the final JSON is a single-line string containing all HTML. 
+    12. For output files:
+        • Images (.png, .jpg, .jpeg, .gif) → strictly use <img src='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' style="max-width:100%; height:auto; border-radius:8px;" alt='{{execution_output.raw.output["outputs_created"]'/>  
+        • Videos (.mp4, .webm, .ogg) → strictly use <video src='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' controls style="max-width:100%; border-radius:8px;"></video>  
+        • Audio (.mp3, .wav, .ogg) → strictly use <audio src='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' controls></audio>  
+        • Other file types → use <a href='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' target='_blank'>{{execution_output.raw.output["outputs_created"]</a>
   examples: > 
     [
       {
@@ -95,8 +99,7 @@ output:
           }
         },
         "output": {
-          "answer": "<div style='font-family:Arial,sans-serif;'><h2>Task Completed Successfully</h2><p>The request to navigate to Instagram and take a screenshot has been completed successfully. The screenshot captures the full page as requested.</p><p><strong>Planner Summary:</strong><br>Task: Navigate to Instagram and take a screenshot<br>Progress: The executor agent has successfully navigated to instagram.com and taken a full-page screenshot.<br>Adaptation reasoning: The user's request has been fully completed. No further actions are required.<br>Remaining work: Task completed successfully</p><p>Key actions performed:</p><ul><li>Step 1: Navigated to Instagram and captured screenshot</li></ul><p>Number of iterations: 1</p><p>You can view the screenshot here: <img src='http://localhost:8000/screenshots/instagram_screenshot.png'' alt='Instagram Screenshot' style="max-width:100%; height:auto; border-radius:8px;"/></p><p>No errors were reported during execution.</p><p>Suggested follow-up actions:</p><ul><li>Review the screenshot to ensure all necessary content is visible</li><li>Use the screenshot for reporting, documentation, or sharing purposes</li></ul></div>"
+          "answer": "<div style='font-family:Arial,sans-serif;'><h2>Task Completed Successfully</h2><p>The request to navigate to Instagram and take a screenshot has been completed successfully. The screenshot captures the full page as requested.</p><p><strong>Planner Summary:</strong><br>Task: Navigate to Instagram and take a screenshot<br>Progress: The executor agent has successfully navigated to instagram.com and taken a full-page screenshot.<br>Adaptation reasoning: The user's request has been fully completed. No further actions are required.<br>Remaining work: Task completed successfully</p><p>Key actions performed:</p><ul><li>Step 1: Navigated to Instagram and captured screenshot</li></ul><p>Number of iterations: 1</p><p>You can view the screenshot here: <img src='http://localhost:8000/screenshots/instagram_screenshot.png' alt='Instagram Screenshot' style=\"max-width:100%; height:auto; border-radius:8px;\"/></p><p>No errors were reported during execution.</p><p>Suggested follow-up actions:</p><ul><li>Review the screenshot to ensure all necessary content is visible</li><li>Use the screenshot for reporting, documentation, or sharing purposes</li></ul></div>"
         }
       }
     ]
-    

@@ -11,7 +11,7 @@ from playwright.async_api import Page
 from typing import List, Optional, Literal
 from enum import Enum
 from typing import Union
-import genai
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ class ExecutorOutputFormat(BaseModel):
 
 class FinalOutputFormat(BaseModel):
     answer:str
+    outputs_created: List[str] = Field(default_factory=list)
 
 class StepStatus(str, Enum):
     PENDING = "PENDING"
@@ -250,15 +251,13 @@ class MasterCrew:
 
     @task
     def output_task(self) -> Task:
-        if self._output_task is None:
-            self._output_task = Task(
+        return Task(
                 config=self.tasks_config["output_task"],
                 agent=self.output(),
                 context=[self.execution_task(),self.planner_task()],  # Pass execution results
                 input_variables=["execution_task.output","planner_task.output"],  # Feed the raw JSON result
                 output_json=FinalOutputFormat,
             )
-        return self._output_task
 
     
     @crew
@@ -407,43 +406,14 @@ class MasterCrew:
                     output_data = self.output_task().output.model_dump()
                 else:
                     output_data = None
-                #if output_data:
-                    # prompt_text = f"""
-                    # You are an Output Agent. Answer the user's question in plain English and provide a human-readable HTML response.
-                    # Do not include logs or tables. Render images, videos, and audio appropriately.
-                    # Here is the task result JSON: {output_data}
-                    # """
-                    
-                    # # Correct way: use llm.generate()
-                    # llm_response = llm.generate(
-                    #     prompt=prompt_text,
-                    #     max_output_tokens=1000  # optional, adjust as needed
-                    # )
+                if(output_data):
+                    if not hasattr(self,"all_outputs"):
+                        self.all_outputs=[]
+                    self.all_outputs+=[output_data]
 
-                    # # Extract the text output
-                    # # CrewAI LLM returns a list of generations
-                    # new_answer = ""
-                    # if llm_response.generations and len(llm_response.generations) > 0:
-                    #     new_answer = llm_response.generations[0].text.strip()
+                final_text = " ".join([out["answer"] for out in self.all_outputs if "answer" in out])
 
-                    # # Append to final answer
-                    # if not hasattr(self, "final_answer"):
-                    #     self.final_answer = ""
-
-                    # self.final_answer += new_answer
-                    # return self.final_answer
-
-
-                # Get the new answer from Output Agent
-                new_answer = output_data["answer"] if output_data else ""
-
-                # Append it to existing final output
-                if not hasattr(self, "final_answer"):
-                    self.final_answer = ""  # Initialize once
-
-                self.final_answer += str(new_answer)  # Append instead of overwrite
-
-                return self.final_answer
+                return final_text
 
                 
             if iteration == max_iterations - 1:

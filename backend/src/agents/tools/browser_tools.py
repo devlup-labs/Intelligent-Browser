@@ -67,6 +67,8 @@ class TakeScreenshotTool(BaseTool):
             # - Read text content and navigation menus
             # - Determine the next action to take
             # - Locate specific elements for clicking or interaction"""
+            if hasattr(self, "execution_result"):
+                self.execution_result.outputs_created.append(ss_name)
             return ss_name
         except PlaywrightError as e:
             return f"Failed to take screenshot due to browser error: {e}"
