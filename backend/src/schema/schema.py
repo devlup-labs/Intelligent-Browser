@@ -23,7 +23,13 @@ class Token(BaseModel):
 
 
 class ChatInput(BaseModel):
-    user_request:str
+    user_request:str   
+    
+class ChatOutput(BaseModel):
+    id:int
+    user_request:str   
+    crew_response:str
+
 
 
 class ChatOutputFormat(BaseModel):

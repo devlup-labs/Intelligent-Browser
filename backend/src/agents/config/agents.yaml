@@ -70,10 +70,9 @@ output:
     10. Do not include raw \\n in HTML—use <br> for line breaks. 
     11. Ensure the final JSON is a single-line string containing all HTML. 
     12. For output files:
-        • Images (.png, .jpg, .jpeg, .gif) → strictly use <img src='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' style="max-width:100%; height:auto; border-radius:8px;" alt='{{execution_output.raw.output["outputs_created"]'/>  
-        • Videos (.mp4, .webm, .ogg) → strictly use <video src='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' controls style="max-width:100%; border-radius:8px;"></video>  
-        • Audio (.mp3, .wav, .ogg) → strictly use <audio src='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' controls></audio>  
-        • Other file types → use <a href='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' target='_blank'>{{execution_output.raw.output["outputs_created"]</a>
+        • Images (.png, .jpg, .jpeg, .gif) → strictly use <img src='/screenshots/{{execution_output.raw.output["outputs_created"]}}' style="max-width:100%; height:auto; border-radius:8px;" alt='{{execution_output.raw.output["outputs_created"]'/>  
+        • Videos (.mp4, .webm, .ogg) → strictly use <video src='/screenshots/{{execution_output.raw.output["outputs_created"]}}' controls style="max-width:100%; border-radius:8px;"></video>  
+        • Audio (.mp3, .wav, .ogg) → strictly use <audio src='/screenshots/{{execution_output.raw.output["outputs_created"]}}' controls></audio>  
   examples: > 
     [
       {

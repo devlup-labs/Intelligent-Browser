@@ -188,7 +188,7 @@ output_task:
     Convert the raw JSON results from {{execution_task.output}} and {{planner_task.output}} into a natural, human-readable narrative.
     Present the overall task status, step descriptions, results, outputs created, errors (if any), and planner insights as flowing paragraphs.
     Only include images, screenshots, or other media if the user explicitly requested them and they exist.
-    If an image is included, the path of the <img> tag must be served from the FastAPI static mount: <img src='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' style="max-width:100%; height:auto; border-radius:8px;" alt="{{execution_output.raw.output["outputs_created"]}}'/>.
+    If an image is included, the path of the <img> tag must be served from the FastAPI static mount: <img src='/screenshots/{{execution_output.raw.output["outputs_created"]}}' style="max-width:100%; height:auto; border-radius:8px;" alt="{{execution_output.raw.output["outputs_created"]}}'/>.
     The final output should be stored in a single JSON field called "answer" and should contain HTML code only.
   input_variables:
     - execution_task.output
@@ -200,11 +200,10 @@ output_task:
     - It must include a step-by-step section using "Step 1:", "Step 2:", etc., where each step clearly shows its status (Success/Failure) and any output produced.
     - If {{execution_task.output.outputs_created}} contains any image filenames (ending with .png, .jpg, .jpeg, .gif):
         * You MUST include an <img> tag for each image.
-        * The tag MUST be in the format: <img src='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}' style="max-width:100%; height:auto; border-radius:8px;" alt="{{execution_output.raw.output["outputs_created"]}}'/>.
+        * The tag MUST be in the format: <img src='/screenshots/{{execution_output.raw.output["outputs_created"]}}' style="max-width:100%; height:auto; border-radius:8px;" alt="{{execution_output.raw.output["outputs_created"]}}'/>.
         * You MUST NOT describe the image in text instead of using an <img> tag.
         * You MUST NOT omit the <img> tag if files exist.
     - If no image is present in outputs_created, but {planner_task.output.progress_analysis} mentions an image filename, then treat that as an output and display it using the same <img> format.
-    - For non-image outputs, show them as links: <a href='http://localhost:8000/screenshots/{{execution_output.raw.output["outputs_created"]}}'>{{execution_output.raw.output["outputs_created"]}}</a>
     - HTML must be contained in a single-line JSON string under "answer".
     - Do not include raw JSON or backend/internal details (agents, tools, tasks).
 

@@ -17,11 +17,20 @@
     const [active, setActive] = useState('new');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [imgURL,setImgURL]=useState(null);
     const navItems = [
       { id: 'new', label: 'New Chat', icon: PlusIcon },
       { id: 'previous', label: 'Previous Chats', icon: ChatsIcon },
       { id: 'settings', label: 'Settings', icon: SettingsIcon },
     ];
+    const imageLoading=({ss_name})=>{
+      useEffect(()=>{
+      const imgFetching=()=>{
+        
+      }
+    })
+    }
+    
 
     async function clickEvent() {
 
