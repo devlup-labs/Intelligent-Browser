@@ -35,10 +35,10 @@
         headers: { Authorization: `Bearer ${token}` }
       });
       setData(res.data);
-      res.data.forEach((val,key)=>{
+      res.data.forEach((val)=>{
         setUserMessages(prev=>[...prev,val.user_request.trim()]);
-        setCrewResponse(prev=>[...prev,val.crew_response]);
-        // console.log("ANswer:",val.crew_response);
+        setCrewResponse(prev=>[...prev,val.crewai_response]);
+        console.log("ANswer:",val);
         setI(i+1);
 
       })
@@ -74,7 +74,7 @@
           console.log(response);
           setI(i + 1);
           setUserMessages(prev => [...prev, message.trim()]);
-          setCrewResponse(prev=>[...prev,response.data]);
+          setCrewResponse(prev=>[...prev,response.data.crewai_response]);
           setMessage("");
         }
         catch (error) {
@@ -168,7 +168,7 @@
                   {/* userMessages container */}
                   <div className="px-4 space-y-3 py-2 flex flex-col mb-16">
                     {userMessages.map((val, i) => (
-                      <div key={i}>
+                      <div key={i} className="flex flex-col">
                       <div
                         className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words bg-[#42a742] self-end`}
                        
