@@ -18,6 +18,7 @@
     const [active, setActive] = useState('new');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [loading1,setLoading1]=useState(true);
     const [imgURL,setImgURL]=useState(null);
     const [data,setData]=useState([]);
     const navItems = [
@@ -34,10 +35,19 @@
         headers: { Authorization: `Bearer ${token}` }
       });
       setData(res.data);
-      setCrewResponse(data)//start editing from here
+      res.data.forEach((val,key)=>{
+        setUserMessages(prev=>[...prev,val.user_request.trim()]);
+        setCrewResponse(prev=>[...prev,val.crew_response]);
+        // console.log("ANswer:",val.crew_response);
+        setI(i+1);
+
+      })
     } catch (error) {
       console.log("Error fetching chats:", error);
     }
+    finally{
+          setLoading1(false);
+        }
   };
   gettingChats();
 }, []);
@@ -70,6 +80,7 @@
         catch (error) {
           console.log("Error in getting Resposne from backend!!", error);
         }
+        
 
       }
       else {
@@ -113,7 +124,7 @@
       if (!isLoggedIn && !loading) router.push("/login");
     }, [isLoggedIn, loading])
     return (
-      isLoggedIn ? (
+      isLoggedIn && !loading1? (
         <div className="relative flex min-h-screen flex-col bg-[#111418] overflow-x-hidden" style={{ fontFamily: 'Manrope, Noto Sans, sans-serif' }}>
           <div className="layout-container flex h-full grow flex-col">
             <div className="flex flex-1 w-full px-6 py-5 gap-4">
@@ -156,16 +167,16 @@
 
                   {/* userMessages container */}
                   <div className="px-4 space-y-3 py-2 flex flex-col mb-16">
-                    {data.map((val, i) => (
+                    {userMessages.map((val, i) => (
                       <div key={i}>
                       <div
                         className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words bg-[#42a742] self-end`}
                        
-                        >{val.user_request}</div>
+                        >{val}</div>
                         <div
                         className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words bg-[#283039] self-start`}
-                        dangerouslySetInnerHTML={{ __html: val.crew_response }} // render HTML instead of plain text
-                        >{val.crew_response}</div>
+                        dangerouslySetInnerHTML={{ __html: crewResponse[i] }} // render HTML instead of plain text
+                        />
                         </div>
                     ))}
                     <div ref={messagesEndRef} />
