@@ -11,26 +11,37 @@
 
   export default function Home() {
     const [message, setMessage] = useState("");
-    const [messages, setMessages] = useState<string[]>([]);
+    const [userMessages, setUserMessages] = useState<string[]>([]);
+    const [crewResponse,setCrewResponse]=useState<string[]>([])
     const [i, setI] = useState(1);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const [active, setActive] = useState('new');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [loading, setLoading] = useState(true);
     const [imgURL,setImgURL]=useState(null);
+    const [data,setData]=useState([]);
     const navItems = [
       { id: 'new', label: 'New Chat', icon: PlusIcon },
       { id: 'previous', label: 'Previous Chats', icon: ChatsIcon },
       { id: 'settings', label: 'Settings', icon: SettingsIcon },
     ];
-    const imageLoading=({ss_name})=>{
-      useEffect(()=>{
-      const imgFetching=()=>{
-        
-      }
-    })
-    }
     
+    useEffect(() => {
+  const gettingChats = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await axios.get("http://localhost:8000/gettingChats", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setData(res.data);
+      setCrewResponse(data)//start editing from here
+    } catch (error) {
+      console.log("Error fetching chats:", error);
+    }
+  };
+  gettingChats();
+}, []);
+
 
     async function clickEvent() {
 
@@ -52,7 +63,8 @@
           );
           console.log(response);
           setI(i + 1);
-          setMessages(prev => [...prev, message.trim(), response.data]);
+          setUserMessages(prev => [...prev, message.trim()]);
+          setCrewResponse(prev=>[...prev,response.data]);
           setMessage("");
         }
         catch (error) {
@@ -73,7 +85,7 @@
 
     useEffect(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [userMessages]);
     const router = useRouter();
     useEffect(() => {
       const verifyToken = async () => {
@@ -142,15 +154,19 @@
                     </p>
                   </div>
 
-                  {/* Messages container */}
+                  {/* userMessages container */}
                   <div className="px-4 space-y-3 py-2 flex flex-col mb-16">
-                    {messages.map((msg, i) => (
+                    {data.map((val, i) => (
+                      <div key={i}>
                       <div
-                        key={i}
-                        className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words ${i % 2 === 0 ? 'bg-[#42a742] self-end' : 'bg-[#283039] self-start'
-                          }`}
-                        dangerouslySetInnerHTML={{ __html: msg }} // render HTML instead of plain text
-                      />
+                        className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words bg-[#42a742] self-end`}
+                       
+                        >{val.user_request}</div>
+                        <div
+                        className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words bg-[#283039] self-start`}
+                        dangerouslySetInnerHTML={{ __html: val.crew_response }} // render HTML instead of plain text
+                        >{val.crew_response}</div>
+                        </div>
                     ))}
                     <div ref={messagesEndRef} />
                   </div>
