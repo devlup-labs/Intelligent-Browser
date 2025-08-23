@@ -23,6 +23,7 @@ app.include_router(chatRouter)
 
 
 
+
 @app.get("/")
 def hello():
     return "Hello World"

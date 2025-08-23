@@ -7,10 +7,11 @@ from crewai.project import CrewBase, agent, crew, task
 import logging
 from src.agents.tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TakeScreenshotTool, ClickElementTool, FillInputTool
 from src.agents.utils.browser_manager import BrowserManager
-from playwright.async_api import Page
+from playwright.async_api import Page # pyright: ignore[reportMissingImports]
 from typing import List, Optional, Literal
 from enum import Enum
 from typing import Union
+from src.agents.event_listerner.basic_listerner import basic_listener
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -171,11 +172,7 @@ class MasterCrew:
                 page=self.page
             )
 
-            # self.check_uncheck_tool = PlaywrightCheckboxTool(
-            #     name=self.tools_config['check_uncheck_tool']['name'],
-            #     description=self.tools_config['check_uncheck_tool']['description'],
-            #     page=self.page
-            # )
+
         except (FileNotFoundError, yaml.YAMLError) as e:
             logger.error(f"Failed to load or parse configuration: {e}")
             raise
@@ -381,7 +378,7 @@ class MasterCrew:
                 
             if iteration == max_iterations - 1:
                 logger.warning(f"⚠️ Reached maximum iterations ({max_iterations}) without completion")
-                return {
+                return {    
                     "status": "MAX_ITERATIONS_REACHED", 
                     "iterations": iteration + 1,
                     "final_result": final_result if 'final_result' in locals() else None,
