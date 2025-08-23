@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react';
 import { useRouter } from "next/router";
 import axios from 'axios';
 
@@ -8,11 +7,24 @@ import axios from 'axios';
 export default function Home() {
   const [userMessage, setUserMessage] = useState("");
   const [messages, setMessages] = useState([]);
+import { useState, useRef, useEffect, useContext } from 'react';
+
+import { AuthContext } from './api/authcontext';
+import { useRouter } from 'next/router';
+import { error } from 'console';
+
+
+
+export default function Home() {
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<string[]>([]);
+  const [i, setI] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState('new');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading,setLoading]=useState(true);
   const socket=useRef(null);
+
   const navItems = [
     { id: 'new', label: 'New Chat', icon: PlusIcon },
     { id: 'previous', label: 'Previous Chats', icon: ChatsIcon },
@@ -54,6 +66,7 @@ export default function Home() {
     
 
   
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -133,11 +146,13 @@ export default function Home() {
                     <div
                       key={i}
                       className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words ${type==="user"
+
                         ? 'bg-[#42a742] self-end'   // User message → right side
                         : 'bg-[#283039] self-start' // Bot message → left side
                         }`}
                     >
                       {text}
+                    
                     </div>
                   ))}
                   <div ref={messagesEndRef} />
@@ -157,11 +172,13 @@ export default function Home() {
                             setUserMessage(e.target.value);
                           }}
                           onKeyDown={(e) => { if (e.key === 'Enter') sendMessage(); }}
+
                         />
                         <div className="flex bg-[#283039] items-center justify-center pr-4 rounded-r-xl">
                           <button
                             className="min-w-[84px] h-8 px-4 bg-[#0a65c1] text-white text-sm font-medium rounded-full hidden md:block"
                             onClick={sendMessage}>
+
                             Send
                           </button>
                         </div>

@@ -172,6 +172,7 @@ class MasterCrew:
                 page=self.page
             )
 
+
         except (FileNotFoundError, yaml.YAMLError) as e:
             logger.error(f"Failed to load or parse configuration: {e}")
             raise
