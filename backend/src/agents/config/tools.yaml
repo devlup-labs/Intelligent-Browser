@@ -14,6 +14,13 @@ fetch_and_clean_html_tool:
     content (scripts, styles), and structures the output for AI consumption. 
     The input must be a single, complete URL.
 
+smart_login_tool:
+  name: "Smart Login"
+  description: >-
+    A tool to perform smart login actions on a webpage.
+    Use this when you need to log in to a website with complex authentication.
+    The input must include the URL and parsed HTML.
+
 click_element_tool:
   name: "Click Element"
   description: >-

@@ -38,7 +38,8 @@ executor:
     • Click Button → Parse HTML to find button selector, then use "Click Element"
     • Fill Form → Parse HTML to find input selectors, then use "Fill Input"
     • Select Dropdown → Parse HTML to find dropdown options, then use "Select Dropdown"
-    
+    • Smart Login → Use "Smart Login" tool, passing the URL and parsed HTML
+
     ERROR HANDLING:
     • Tool returns None → Consider SUCCESS unless explicit error message
     • Tool output empty → Consider SUCCESS for actions like screenshot, navigation

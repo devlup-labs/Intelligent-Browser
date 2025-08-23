@@ -6,6 +6,7 @@ import yaml
 from crewai.project import CrewBase, agent, crew, task
 import logging
 from src.agents.tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TakeScreenshotTool, ClickElementTool, FillInputTool
+from src.agents.tools.auth_tools import SmartLoginTool
 from src.agents.utils.browser_manager import BrowserManager
 from playwright.async_api import Page # pyright: ignore[reportMissingImports]
 from typing import List, Optional, Literal
@@ -171,6 +172,11 @@ class MasterCrew:
                 description=self.tools_config['fill_input_tool']['description'],
                 page=self.page
             )
+            self.smart_login_tool = SmartLoginTool(
+                name=self.tools_config['smart_login_tool']['name'],
+                description=self.tools_config['smart_login_tool']['description'],
+                page=self.page
+            )
 
         except (FileNotFoundError, yaml.YAMLError) as e:
             logger.error(f"Failed to load or parse configuration: {e}")
@@ -201,7 +207,8 @@ class MasterCrew:
                    self.double_click_tool,
                    self.text_delete_tool,
                    self.click_element_tool,
-                   self.fill_input_tool],
+                   self.fill_input_tool,
+                   self.smart_login_tool,],
             output_json=ExecutorOutputFormat,
             llm=llm,
             verbose=True,

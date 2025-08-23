@@ -685,5 +685,4 @@ class FetchAndCleanHTMLTool(BaseTool):
             'text': text_content,
             'type': 'interactive'
         }
-
-
+    

@@ -7,7 +7,9 @@ from src.schema import schema
 from fastapi.responses import JSONResponse
 from src.middleware.get_current_user import getCurrentUser
 from src.agents.main import run
+# Update the import path below if connection_manager.py is in a different location
 from src.utils.connection_manager import manager
+
 import nest_asyncio
 
 nest_asyncio.apply()

@@ -1,4 +1,7 @@
 {
   "git.ignoreLimitWarning": true,
-  "python-envs.pythonProjects": []
+  "python-envs.pythonProjects": [],
+  "python.analysis.extraPaths": [
+    "./backend"
+  ]
 }
