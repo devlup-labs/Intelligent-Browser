@@ -6,10 +6,11 @@ import nest_asyncio
 
 nest_asyncio.apply()
 
-async def run(user_request:str):
+
+async def run(chatRequest:schema.ChatInput):
     # user_request = input("Ask me anything!! ---> ")
 
-    # user_request=chatRequest.user_request
+    user_request=chatRequest.user_request
     agent_list = ["planner_agent", "executor_agent"]
     
     inputs = {
