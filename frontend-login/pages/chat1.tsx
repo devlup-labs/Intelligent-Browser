@@ -1,13 +1,16 @@
-'use client'
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from "next/router";
-import axios from 'axios';
+
+'use client'
+import axios, { formToJSON } from 'axios';
+import { useState, useRef, useEffect, useContext } from 'react';
+import { useRouter } from 'next/router';
+
 
 
 export default function Home() {
-  const [userMessage, setUserMessage] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<string[]>([]);
+  const [i, setI] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState('new');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -21,44 +24,63 @@ export default function Home() {
 
 
   useEffect(()=>
-    {
-        socket.current = new WebSocket("ws://localhost:8000/websocket");
+  {
+      socket.current=new WebSocket("ws://localhost:8000/ws")
 
-        socket.current.onopen = () => {
-            console.log("✅ Connected to WebSocket");
-        };
+      socket.current.onopen = () => {
+        console.log("✅ Connected to WebSocket");
+      };
 
-        socket.current.onmessage=((event)=>
-        {
-            const systemMessage={
-                text:event.data,
-                type:"system"
-            }
-            setMessages((prevMessages) => [...prevMessages, systemMessage]);
-        })
+      socket.current.onmessage((event)=>
+      {
+          
+      })
+  })
 
-        return () => {
-            socket.current.close();
-        };
-    },[])
 
-    const sendMessage = () => {
-        const userMessageFinal={
-            text:userMessage,
-            type:"user"
-        }
-        setMessages((previos)=>[...previos,userMessageFinal])
-        socket.current.send(userMessage);
-        setUserMessage('');
-    };
-    
 
-  
+  async function clickEvent() {
+
+    const request_data = {
+      "user_request": message
+    }
+
+
+    if (message.trim() !== "") {
+      try {
+        const token = localStorage.getItem("token")
+        const response = await axios.post("http://localhost:8000/chat", request_data,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, //  Send token in header
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        console.log(response);
+        setI(i + 1);
+        setMessages(prev => [...prev, message.trim(), JSON.stringify(response.data)]);
+        setMessage("");
+      }
+      catch (error) {
+        console.log("Error in getting Resposne from backend!!", error);
+      }
+
+    }
+    else {
+      alert("Kindly enter some text!!");
+    }
+
+
+
+
+
+
+  }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
   const router = useRouter();
   useEffect(() => {
   const verifyToken = async () => {
@@ -129,15 +151,15 @@ export default function Home() {
 
                 {/* Messages container */}
                 <div className="px-4 space-y-3 py-2 flex flex-col mb-16">
-                  {messages.map(({ text, type }, i) => (
+                  {messages.map((msg, i) => (
                     <div
                       key={i}
-                      className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words ${type==="user"
+                      className={`text-white px-4 py-2 rounded-xl w-fit max-w-[75%] break-words ${i % 2 === 0
                         ? 'bg-[#42a742] self-end'   // User message → right side
                         : 'bg-[#283039] self-start' // Bot message → left side
                         }`}
                     >
-                      {text}
+                      {msg}
                     </div>
                   ))}
                   <div ref={messagesEndRef} />
@@ -151,17 +173,14 @@ export default function Home() {
                         <input
                           placeholder="Type your message here..."
                           className="form-input w-full flex-1 rounded-l-xl text-white focus:outline-0 focus:ring-0 border-none bg-[#283039] h-full placeholder:text-[#9cabba] px-4 text-base font-normal"
-                          value={userMessage}
-                          onChange={(e) => {
-                            
-                            setUserMessage(e.target.value);
-                          }}
-                          onKeyDown={(e) => { if (e.key === 'Enter') sendMessage(); }}
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') clickEvent(); }}
                         />
                         <div className="flex bg-[#283039] items-center justify-center pr-4 rounded-r-xl">
                           <button
                             className="min-w-[84px] h-8 px-4 bg-[#0a65c1] text-white text-sm font-medium rounded-full hidden md:block"
-                            onClick={sendMessage}>
+                            onClick={clickEvent}>
                             Send
                           </button>
                         </div>
