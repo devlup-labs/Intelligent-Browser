@@ -11,17 +11,20 @@ from playwright.async_api import Page
 from typing import List, Optional, Literal
 from enum import Enum
 from typing import Union
+import litellm
+litellm.set_verbose = True
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-if not os.getenv("GEMINI_API_KEY"):
-    raise ValueError("GEMINI_API_KEY environment variable is not set")
+if not os.getenv("OPENAI_API_KEY"):
+    raise ValueError("OPENAI_API_KEY environment variable is not set")
 
 try:
     llm = LLM(
-        model="gemini/gemini-2.5-flash-lite",
-        api_key=os.getenv("GEMINI_API_KEY"),
-        temperature=0.7,
+        model="gpt-5-mini-2025-08-07",
+        api_key=os.getenv("OPENAI_API_KEY"),
+        drop_params=True,
+        additional_drop_params=["stop"]
     )
     logger.info("CrewAI LLM initialized successfully")
 except Exception as e:
@@ -35,6 +38,7 @@ except Exception as e:
 class ExecutorOutputFormat(BaseModel):
     status: Literal["SUCCESS", "FAILURE", "PARTIAL_FAILURE"]
     step_description: str
+    tool_used: str
     result_summary: str
     error_details: Optional[str] = None
     suggestions_for_planner: Optional[str] = None
@@ -206,9 +210,11 @@ class MasterCrew:
                    self.text_delete_tool,
                    self.click_element_tool,
                    self.fill_input_tool],
+            tools_config= self.tools_config,
             output_json=ExecutorOutputFormat,
             llm=llm,
             verbose=True,
+            always_use_tools=True,
         )
 
     @task
@@ -229,6 +235,7 @@ class MasterCrew:
             agent=self.executor_agent(),
             context=[self.planner_task()],
             output_json=ExecutorOutputFormat,
+            always_use_tools=True
         )
         return self._executor_task
     
@@ -237,9 +244,8 @@ class MasterCrew:
 
         if(self.crew_instance is None):
             self.crew_instance= Crew(
-         
-            agents=self.agents, 
-            tasks=self.tasks,
+            agents=[self.planner_agent(), self.executor_agent()],
+            tasks=[self.planner_task(), self.execution_task()],
             process=Process.sequential,
             verbose=True,
             memory=False #chromadb needs openai api key to work so not useful
@@ -326,11 +332,23 @@ class MasterCrew:
             logger.info(f"🔄 Starting iteration {iteration+1}/{max_iterations}")
 
             kickoff_inputs = {
+                "model": "gpt-5-mini-2025-08-07",
+                "messages": [
+                    {"role": "user", 
+                     "content": {
+                         "user_request": user_request,
+                         "agents_list": ["executor_agent"],
+                         "execution_feedback": self.execution_history[-1] if self.execution_history else None,
+                         "progress_state": f"Iteration {iteration+1}, completed {len(self.execution_history)} tasks",
+                         "iteration": iteration+1,
+                    }}
+                ],
+                "reasoning_effort": "medium",
+                "verbosity": "medium",
+                "max_tokens": 1000,
                 "user_request": user_request,
-                "agents_list": ["executor_agent"],
                 "execution_feedback": self.execution_history[-1] if self.execution_history else None,
                 "progress_state": f"Iteration {iteration+1}, completed {len(self.execution_history)} tasks",
-                "iteration": iteration+1,
             }
 
             try:

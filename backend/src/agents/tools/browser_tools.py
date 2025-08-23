@@ -48,6 +48,7 @@ class TakeScreenshotTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel] = TakeScreenshotSchema
+    type: str = "custom"  
     page: Page
 
     async def _run(self, ss_name: str, full_page: bool) -> str:
@@ -86,6 +87,7 @@ class GoToPageTool(BaseTool):
     name: str 
     description: str
     args_schema: type[BaseModel] = GoToPageSchema
+    type: str = "custom"
     page: Page
 
     async def _run(self, url: str) -> str:
@@ -101,6 +103,7 @@ class ClickElementTool(BaseTool):
     name: str 
     description: str
     args_schema: type[BaseModel] = ClickElementSchema
+    type: str = "custom"
     page: Page
 
     async def _run(self, selector: str, wait_for_navigation: bool = False) -> str:
@@ -122,6 +125,7 @@ class FillInputTool(BaseTool):
     name: str 
     description: str
     args_schema: type[BaseModel] = FillInputSchema
+    type: str = "custom"
     page: Page
 
     async def _run(self, selector: str, value: str) -> str:
@@ -141,6 +145,7 @@ class GoBackTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel] = EmptySchema #no input is needed to go back
+    type: str = "custom"
     page: Page
 
     async def _run(self) -> str:
@@ -156,6 +161,7 @@ class ReloadPageTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel] = EmptySchema #no input is needed for reload
+    type: str = "custom"
     page: Page
 
     async def _run(self) -> str:
@@ -172,6 +178,7 @@ class GetCurrentURL(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel]= EmptySchema #no input needed
+    type: str = "custom"
     page: Page
 
     async def _run(self) -> str:
@@ -185,6 +192,7 @@ class HoverElementTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel]= HoverElementInput
+    type: str = "custom"
     page: Page
 
     async def _run(self, selector:str) -> str:
@@ -201,6 +209,7 @@ class SelectDropdownTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel] = SelectDropdownInput
+    type: str = "custom"
     page: Page
 
     async def _run(self, selector:str, option_value: Optional[str]= None, option_label: Optional[str]= None, option_index: Optional[int]= None) -> str:
@@ -232,6 +241,7 @@ class TextDeleteTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel] = TextDeleteSchema
+    type: str = "custom"
     page: Page
 
     async def _run(self, text: str) -> str:
@@ -250,6 +260,7 @@ class DoubleClickTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel] = DoubleCLickSchema
+    type: str = "custom"
     page: Page
 
     async def _run(self, selector: str) -> str:
@@ -270,6 +281,7 @@ class ScrollPageTool(BaseTool):
     name: str
     description: str
     args_schema: type[BaseModel] = ScrollPageSchema
+    type: str = "custom"
     page: Page
 
     async def _run(self, direction: str) -> str:
@@ -289,6 +301,7 @@ class FetchAndCleanHTMLTool(BaseTool):
     name: str 
     description: str 
     args_schema: type[BaseModel] = FetchAndCleanHTMLSchema
+    type: str = "custom"
     page: Page
 
     async def _run(self, url: str) -> str:

@@ -3,12 +3,12 @@ planner_task:
   description: >
     You are a strategic task planner that works iteratively with an executor agent.
 
-    For the given task {{user_request}}, you will:
+    For the given task {{messages[0].content}}, you will:
 
     1. FIRST CALL (when no execution_feedback): Analyze the overall request and provide the master plan overview
     2. SUBSEQUENT CALLS (when execution_feedback exists): Generate ONE specific task at a time based on:
-       - Previous execution results from executor: {{execution_feedback}}
-       - Current progress state: {{progress_state}}
+       - Previous execution results from executor: {{messages[1].content.execution_feedback}}
+       - Current progress state: {{messages[1].content.progress_state}}
        - What needs to be done next
        - You also have access to the HTML_PARSER_TOOL, a specialized tool responsible for retrieving raw HTML content from a webpage and returning a clean, structured version of the HTML for further processing.
        - Mention this tool "ONLY" when you need to interact with a webpage, such as clicking buttons, filling forms, or navigating links so that executor can use, and not for browser and system level tasks such as scrolling, hovering and taking a screenshot.

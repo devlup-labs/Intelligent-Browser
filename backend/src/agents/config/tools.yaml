@@ -1,4 +1,5 @@
 goto_page_tool:
+  type: "custom"
   name: "Navigate To URL"
   description: >-
     A tool to navigate a web browser to a specific URL. 
@@ -7,6 +8,7 @@ goto_page_tool:
 
 
 fetch_and_clean_html_tool:
+  type: "custom"
   name: "Fetch and Clean HTML Content"
   description: >-
     A tool to extract HTML content from a webpage and clean it for LLM processing.
@@ -15,6 +17,7 @@ fetch_and_clean_html_tool:
     The input must be a single, complete URL.
 
 click_element_tool:
+  type: "custom"
   name: "Click Element"
   description: >-
     A tool to click on a specific element on the current webpage.
@@ -22,6 +25,7 @@ click_element_tool:
     The input must be a valid CSS selector for the element.
 
 fill_input_tool:
+  type: "custom"
   name: "Fill Input"
   description: >-
     A tool to fill a text input field on the current webpage.
@@ -29,6 +33,7 @@ fill_input_tool:
     The input must be a valid CSS selector for the element.
 
 go_back_tool:
+  type: "custom"
   name: "Go Back"
   description: >-
     A tool to go to the previous page in the browser history.
@@ -36,6 +41,7 @@ go_back_tool:
 
 
 reload_page_tool:
+  type: "custom"
   name: "Reload Current Page"
   description: >-
     A tool to refresh or reload the current page in the browser.
@@ -44,6 +50,7 @@ reload_page_tool:
 
 
 get_current_url:
+  type: "custom"
   name: "Get Current page URL"
   description: >-
     A tool to fetch the current URL of the active browser page.
@@ -52,6 +59,7 @@ get_current_url:
 
 
 hover_element_tool:
+  type: "custom"
   name: "Hover Over Element"
   description: >-
     Hovers over the specified element on the current page.
@@ -60,6 +68,7 @@ hover_element_tool:
 
 
 select_dropdown_tool:
+  type: "custom"
   name: "Select Dropdown Option"
   description: >-
     Selects an option from a dropdown using a CSS selector.
@@ -68,6 +77,7 @@ select_dropdown_tool:
  
 
 take_screenshot_tool:
+  type: "custom"
   name: "Take Screenshot"
   description: >-
     A tool to take a screenshot of the current page in the web browser.
@@ -75,6 +85,7 @@ take_screenshot_tool:
     The screenshot will be saved with a specified filename.
 
 chat_tool:
+  type: "custom"
   name: "Chat with User"
   description: >-
     A tool to send a message to the user and receive a response.
@@ -82,6 +93,7 @@ chat_tool:
     The input should be a string message to send to the user.
 
 text_delete_tool:
+  type: "custom"
   name: "Delete Text"
   description: >-
     Deletes text from a specified text field on the current page.
@@ -89,6 +101,7 @@ text_delete_tool:
     Example: {"selector": "#my-input"}.
 
 double_click_tool:
+  type: "custom"
   name: "Double Click Element"
   description: >-
     Performs a double-click action on a specified element.
@@ -96,6 +109,7 @@ double_click_tool:
     Example: {"selector": "#my-element"}.
 
 scroll_page_tool:
+  type: "custom"
   name: "Scroll Page"
   description: >-
     Scrolls the current page in the specified direction.

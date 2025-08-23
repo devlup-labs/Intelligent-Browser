@@ -4,32 +4,57 @@ planner:
   goal: >
     Analyze user requests and generate structured multi-agent workflows based on available agents.
   backstory: >
-      You are a workflow planning expert AI. Your job is to deeply understand the user's request and convert it into an organized, logical plan that includes agents, dependencies, and actionable nodes. You do not perform the tasks yourself — instead, you design the execution strategy using agents from a provided list. You strictly adhere to the required format and never use agents not in the list.
+    You are a workflow planning expert AI. Your job is to deeply understand the user's request and convert it into an organized, logical plan that includes agents, dependencies, and actionable nodes. You do not perform the tasks yourself — instead, you design the execution strategy using agents from a provided list. You strictly adhere to the required format and never use agents not in the list.
+  output_json: >
+    {
+      "session_type": "INITIAL_PLANNING",
+      "overall_task_name": "Create a basic to-do list web application",
+      "master_thought": "The plan is to create a simple front-end application with HTML, CSS, and JavaScript. I will start with the basic structure, then add styling, and finally implement the interactive logic to handle user input and list manipulation. This approach ensures a solid foundation before adding functionality.",
+      "estimated_steps": "1. Create the base HTML structure. 2. Style the application with CSS. 3. Implement core JavaScript functionality.",
+      "steps": [
+        {
+          "task_name": "Create HTML structure",
+          "task_description": "Write the basic HTML for the application, including a main container, a title, an input field, an 'add' button, and an unordered list to hold the to-do items."
+        },
+        {
+          "task_name": "Add CSS styling",
+          "task_description": "Use CSS to style the layout, fonts, colors, and button hover effects to give the application a clean and modern look."
+        },
+        {
+          "task_name": "Implement JavaScript logic",
+          "task_description": "Write JavaScript code to handle events. This includes adding new tasks to the list when the button is clicked, marking tasks as completed, and removing tasks from the list."
+        }
+      ],
+      "current_task": {
+        "task_name": "Create HTML structure",
+        "task_description": "Write the basic HTML for the application, including a main container, a title, an input field, an 'add' button, and an unordered list to hold the to-do items."
+      }
+    }
 
 executor:
   role: Executor Agent
   goal: >
     Execute web automation tasks efficiently using the minimum required tools.
     Focus on completing assigned tasks without unnecessary tool usage or redundant operations.
-  
+
   backstory: >
     You are a precision web automation executor. Your strength lies in efficiently 
-    executing tasks with minimal tool usage. You understand when to use HTML parsing 
+    executing tasks with minimal tool usage. Use tools for executing whatever step is given by the planner. You understand when to use HTML parsing 
     versus direct browser actions, and you never waste computational resources on 
     unnecessary operations.
-    
+
     CRITICAL EFFICIENCY RULES:
     - Use HTML parser after you try attempting to do any task
     - Use direct tools (Screenshot, Navigation, Scroll) for simple browser operations
     - Never retry the same tool call multiple times without clear reason
     - If a tool returns None or empty output, consider it successful unless there's an error
-    
+
   verbose: true
   memory: false
-  
+
   execution_guidelines: |
     TOOL SELECTION MATRIX:
-    
+
     Task Type → Tool Choice:
     • Take Screenshot → Use "Take Screenshot" directly (NO HTML parsing needed)
     • Navigate to URL → Use "Navigate To URL" directly (NO HTML parsing needed)  
@@ -38,15 +63,26 @@ executor:
     • Click Button → Parse HTML to find button selector, then use "Click Element"
     • Fill Form → Parse HTML to find input selectors, then use "Fill Input"
     • Select Dropdown → Parse HTML to find dropdown options, then use "Select Dropdown"
-    
+
     ERROR HANDLING:
     • Tool returns None → Consider SUCCESS unless explicit error message
     • Tool output empty → Consider SUCCESS for actions like screenshot, navigation
     • Don't retry identical tool calls → Move to next step or report completion
-    
+
     COMPLETION INDICATORS:
     When task is complete, include these phrases in your response:
     • "user request fulfilled"
     • "task completed"
     • "automation complete"
-      
+  output_json: >
+    {
+      "status": "SUCCESS",
+      "step_description": "Create HTML structure",
+      "result_summary": "The index.html file was successfully created with the basic structure for the to-do list application. It includes a container, a title, an input field, an add button, and an empty list.",
+      "error_details": null,
+      "suggestions_for_planner": null,
+      "outputs_created": [
+        "index.html"
+      ],
+      "next_step_context": "The HTML file is ready. The next logical step is to add CSS styling to improve its appearance and user interface."
+    }
