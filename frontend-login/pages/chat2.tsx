@@ -102,12 +102,12 @@ export default function Home() {
         isCompleted: false
       });
       
-    //   const workflowMessage: Message = {
-    //     text: `Starting work    flow: ${data.overall_task_name}`,
-    //     type: "workflow",
-    //     workflowData: data
-    //   };
-    //   setMessages((prev) => [...prev, workflowMessage]);
+      const workflowMessage: Message = {
+        text: `Starting workflow: ${data.overall_task_name}`,
+        type: "workflow",
+        workflowData: data
+      };
+      setMessages((prev) => [...prev, workflowMessage]);
       
     } else if (session_type === "ITERATIVE_PLANNING") {
       setWorkflowState(prev => ({
@@ -115,30 +115,10 @@ export default function Home() {
         steps: data.steps || prev.steps,
         currentTaskName: data.current_task?.task_name || prev.currentTaskName,
         progressAnalysis: data.progress_analysis || '',
-        isCompleted: false // Don't mark as completed here
+        isCompleted: data.task_is_final || false
       }));
       
-    } else if (session_type === "EXECUTOR_RESULT") {
-      // Check if task is completed based on executor output
-      const isTaskCompleted = data.next_step_context === "Task completed - user request fulfilled";
-      
-      if (isTaskCompleted) {
-        setWorkflowState(prev => {
-          // Mark all steps as completed
-          const completedSteps = prev.steps.map(step => ({
-            ...step,
-            status: step.status.toLowerCase() === 'success' || step.status.toLowerCase() === 'completed' 
-              ? step.status 
-              : 'completed'
-          }));
-          
-          return {
-            ...prev,
-            steps: completedSteps,
-            isCompleted: true
-          };
-        });
-        
+      if (data.task_is_final) {
         const completionMessage: Message = {
           text: "🎉 All tasks completed successfully!",
           type: "system"

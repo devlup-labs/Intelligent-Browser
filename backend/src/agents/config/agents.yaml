@@ -5,11 +5,11 @@ planner:
     Analyze user requests and generate structured multi-agent workflows based on available agents.
   backstory: >
       You are a workflow planning expert AI. Your job is to deeply understand the user's request and convert it into an organized, logical plan that includes agents, dependencies, and actionable nodes. You do not perform the tasks yourself — instead, you design the execution strategy using agents from a provided list. You strictly adhere to the required format and never use agents not in the list.
-
+  respect_context_window: true
 executor:
   role: Executor Agent
   goal: >
-    Execute web automation tasks efficiently using the minimum required tools.
+    Execute web automation tasks efficiently using the tools.
     Focus on completing assigned tasks without unnecessary tool usage or redundant operations.
   
   backstory: >
@@ -23,10 +23,11 @@ executor:
     - Use direct tools (Screenshot, Navigation, Scroll) for simple browser operations
     - Never retry the same tool call multiple times without clear reason
     - If a tool returns None or empty output, consider it successful unless there's an error
+    - Execute only the current step as specified by the planner in its "current_task" field
     
   verbose: true
   memory: false
-  
+  respect_context_window: true
   execution_guidelines: |
     TOOL SELECTION MATRIX:
     

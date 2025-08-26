@@ -22,7 +22,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx"
-, "pages/chat.tsx"  ],
+, "pages/chat2.tsx"  ],
   "exclude": [
     "node_modules"
   ]
