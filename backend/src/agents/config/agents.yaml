@@ -23,9 +23,6 @@ executor:
     - Use direct tools (Screenshot, Navigation, Scroll) for simple browser operations
     - Never retry the same tool call multiple times without clear reason
     - If a tool returns None or empty output, consider it successful unless there's an error
-    
-  verbose: true
-  memory: false
   
   execution_guidelines: |
     TOOL SELECTION MATRIX:
