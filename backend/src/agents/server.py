@@ -475,14 +475,14 @@ async def clickElementTool(ss_name: str, full_page: bool, task: str):
             files = {'file': (screenshot_options["path"], f, 'image/png')}
             async with httpx.AsyncClient() as requests:
                 try:
-                    response = await requests.post("http://127.0.0.1:8000/process-image/", data={"task": task, "history": history}, files=files)
+                    response = await requests.post("http://10.36.16.15:8000/process-image/", data={"task": task, "history": history}, files=files)
                     # print(response.json())
                     action_code = response.json()
                     json = action_code['action_code']
                     cord = json['location']
                     pixelCords = await normalizeToPixels(page.viewport_size, cord)
                     await page.mouse.click(pixelCords[0], pixelCords[1])
-                    # time.sleep(2)
+                    # time.sleep(2)>
                     return f"completed task successfully"
                 except Exception as e:
                     print(f"Failed to send image to server: {e}")
