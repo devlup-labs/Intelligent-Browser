@@ -1,5 +1,7 @@
 import asyncio
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import json
 from typing import Dict, Any, List, Optional
 from pydantic import AnyUrl, BaseModel
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 class PlannerOutput(BaseModel):
     status: str  # "IN_PROGRESS" or "SUCCESS" or "FAILED"
     current_task: str
-    use_tool: str
+    use_tool: Optional[str] = None
     reasoning: str
     next_steps: List[str] = []
 
@@ -223,7 +225,7 @@ server_params = StdioServerParameters(
         "bs4",
         "mcp",
         "run",
-        "E:\\test2\\Intelligent-Browser\\backend\\server.py"
+        "E:\\test2\\Intelligent-Browser\\backend\\src\\agents\\server.py"
     ]
 )
 
@@ -326,10 +328,10 @@ Execution History: {json.dumps(execution_history or [], indent=2)}
 Give response in JSON format only.
 """}
         ]
-        if iteration ==1:
-            messages = messages
-        else:
-            messages.pop(0)
+        # if iteration ==1:
+        #     messages = messages
+        # else:
+        #     messages.pop(0)
         
         try:
             # logger.info(iteration)
@@ -385,10 +387,10 @@ Available Tools: {json.dumps([{'name': t['name'], 'description': t['description'
 Give Response in JSON format only.
 """}
         ]
-        if iteration==1:
-            messages = messages
-        else:   
-            messages.pop(0)
+        # if iteration==1:
+        #     messages = messages
+        # else:   
+        #     messages.pop(0)
         
         try:
             response = await self.openai_client.chat.completions.create(
@@ -561,8 +563,8 @@ def main():
         signal.signal(signal.SIGTERM, signal_handler)
     
     try:
-        api_key = os.getenv("OPENAI_API_KEY")
-        request = "go to instagram and take a screenshot"
+        api_key = os.environ.get("OPENAI_API_KEY")
+        request = "go to youtube and click the shorts button"
         
         # Run everything in a single asyncio.run call to avoid task mixing
         result = asyncio.run(run_client_session(request, api_key))

@@ -6,10 +6,13 @@ cd to the `examples/snippets/clients` directory and run:
 """
 
 from mcp.server.fastmcp import FastMCP
+import time
 from playwright.async_api import Page, Browser, async_playwright, Error as PlaywrightError
 from typing import Dict, List, Optional
 from bs4 import BeautifulSoup, NavigableString, Comment
 import re
+import httpx
+# import requests
 
 
 # Create an MCP server
@@ -407,6 +410,7 @@ def add(a: int, b: int) -> int:
 
 @mcp.tool()
 async def StartBrowserSession():
+    """Start a new browsers session at the beginning"""
     try:
         global page
         global browser
@@ -421,6 +425,7 @@ async def StartBrowserSession():
 
 @mcp.tool()
 async def GetCurrentURL():
+    """Get the current URL of the page"""
     global page
     try:
         return f"Current page URL: {page.url}"
@@ -430,6 +435,7 @@ async def GetCurrentURL():
 
 @mcp.tool()
 async def GoToUrlTool(url: str):
+    """Navigate to a specified URL"""
     try:
         global page
         await page.goto(url, wait_until='load')
@@ -441,6 +447,7 @@ async def GoToUrlTool(url: str):
     
 @mcp.tool()
 async def TakeScreenshotTool(ss_name: str, full_page: bool):
+    """Take a screenshot of the current page"""
     global page
     try:
         screenshot_options = {
@@ -454,24 +461,57 @@ async def TakeScreenshotTool(ss_name: str, full_page: bool):
         return f"An unexpected error occurred while taking screenshot: {e}"
     
 @mcp.tool()
-async def ClickElementTool(selector: str, wait_for_navigation: bool = False):
+async def clickElementTool(ss_name: str, full_page: bool, task: str):
+    """clicks the element requirted to perform the task for eg: task = 'click login button', the tool will click the login button"""
     global page
+    history = []
     try:
-        element = await page.query_selector(selector)
-        if not element:
-            return f"Element with selector '{selector}' not found."
-        
-        await element.click()
-        if wait_for_navigation:
-            await page.wait_for_navigation(wait_until='load')
-        return f"Clicked on element with selector '{selector}'."
+        screenshot_options = {
+            "full_page": full_page,
+            "path": ss_name if ss_name.endswith('.png') else f"{ss_name}.png"
+        }
+        screenshot_bytes = await page.screenshot(**screenshot_options)
+        with open(screenshot_options["path"], "rb") as f:
+            files = {'file': (screenshot_options["path"], f, 'image/png')}
+            async with httpx.AsyncClient() as requests:
+                try:
+                    response = await requests.post("http://127.0.0.1:8000/process-image/", data={"task": task, "history": history}, files=files)
+                    # print(response.json())
+                    action_code = response.json()
+                    json = action_code['action_code']
+                    cord = json['location']
+                    pixelCords = await normalizeToPixels(page.viewport_size, cord)
+                    await page.mouse.click(pixelCords[0], pixelCords[1])
+                    # time.sleep(2)
+                    return f"completed task successfully"
+                except Exception as e:
+                    print(f"Failed to send image to server: {e}")
     except PlaywrightError as e:
-        return f"Click action failed due to browser error: {e}"
-    except TimeoutError as e:
-        return f"Click action timed out: {e}"
+        return f"Failed to take screenshot due to browser error: {e}"
+    except Exception as e:
+        return f"An unexpected error occurred while taking screenshot: {e}"
+    
+# @mcp.tool()
+# async def ClickElementTool(selector: str, wait_for_navigation: bool = False):
+#     """Click on an element specified by a CSS selector"""
+#     global page
+#     try:
+#         element = await page.query_selector(selector)
+#         if not element:
+#             return f"Element with selector '{selector}' not found."
+        
+#         await element.click()
+#         if wait_for_navigation:
+#             await page.wait_for_navigation(wait_until='load')
+#         return f"Clicked on element with selector '{selector}'."
+#     except PlaywrightError as e:
+#         return f"Click action failed due to browser error: {e}"
+#     except TimeoutError as e:
+#         return f"Click action timed out: {e}"
     
 @mcp.tool()
 async def FillInputTool(selector: str, value: str):
+    """Fill an input field specified by a CSS selector with a given value"""
     global page
     try:
         element = await page.query_selector(selector)
@@ -487,6 +527,7 @@ async def FillInputTool(selector: str, value: str):
     
 @mcp.tool()
 async def GoBackTool():
+    """Navigate back to the previous page"""
     global page
     try:
         await page.go_back(wait_until='load')
@@ -498,6 +539,7 @@ async def GoBackTool():
     
 @mcp.tool()
 async def ReloadPageTool():
+    """Reload the current page"""
     global page
     try:
         await page.reload(wait_until= 'load')
@@ -509,6 +551,7 @@ async def ReloadPageTool():
     
 @mcp.tool()
 async def HoverElementTool(selector:str):
+    """Hover over an element specified by a CSS selector"""
     global page
     try:
         await page.hover(selector)
@@ -519,7 +562,8 @@ async def HoverElementTool(selector:str):
         return f"Hover action timed out: {e}"
     
 @mcp.tool()
-async def HoverElementTool(selector:str, option_value: Optional[str]= None, option_label: Optional[str]= None, option_index: Optional[int]= None):
+async def DropdownSelectionTool(selector:str, option_value: Optional[str]= None, option_label: Optional[str]= None, option_index: Optional[int]= None):
+    """Select an option from a dropdown menu specified by a CSS selector"""
     global page
     try:
         if option_value:
@@ -569,6 +613,7 @@ async def TextDeleteTool(text: str, selector: str):
     
 @mcp.tool()
 async def DoubleClickTool(selector: str):
+    """Double-click on an element specified by a CSS selector"""
     global page
     try:
         element = await page.query_selector(selector)
@@ -582,39 +627,47 @@ async def DoubleClickTool(selector: str):
     except TimeoutError as e:
         return f"Double-click action timed out: {e}"
     
-@mcp.tool()
-async def FetchAndCleanHTMLTool(selector: str):
-    global page
-    try:
-        # Get element positions from current page
-        element_positions = await _get_element_positions()
+# @mcp.tool()
+# async def FetchAndCleanHTMLTool(selector: str):
+#     """Fetch and clean HTML content from the current page to identify CSS selectors to be used for other tools"""
+#     global page
+#     try:
+#         # Get element positions from current page
+#         element_positions = await _get_element_positions()
         
-        # Get HTML content from current page
-        html_content = await page.content()
+#         # Get HTML content from current page
+#         html_content = await page.content()
         
-        # Clean HTML
-        cleaned_html = _clean_html(html_content, element_positions)
+#         # Clean HTML
+#         cleaned_html = _clean_html(html_content, element_positions)
         
-        return cleaned_html
+#         return cleaned_html
         
-    except Exception as e:
-        return f"Failed to clean HTML from current page. Error: {e}"
+#     except Exception as e:
+#         return f"Failed to clean HTML from current page. Error: {e}"
 
-# Add a dynamic greeting resource
-@mcp.resource("greeting://{name}")
-def get_greeting(name: str) -> str:
-    """Get a personalized greeting"""
-    return f"Hello, {name}!"
+# # Add a dynamic greeting resource
+# @mcp.resource("greeting://{name}")
+# def get_greeting(name: str) -> str:
+#     """Get a personalized greeting"""
+#     return f"Hello, {name}!"
 
 
-# Add a prompt
-@mcp.prompt()
-def greet_user(name: str, style: str = "friendly") -> str:
-    """Generate a greeting prompt"""
-    styles = {
-        "friendly": "Please write a warm, friendly greeting",
-        "formal": "Please write a formal, professional greeting",
-        "casual": "Please write a casual, relaxed greeting",
-    }
+# # Add a prompt
+# @mcp.prompt()
+# def greet_user(name: str, style: str = "friendly") -> str:
+#     """Generate a greeting prompt"""
+#     styles = {
+#         "friendly": "Please write a warm, friendly greeting",
+#         "formal": "Please write a formal, professional greeting",
+#         "casual": "Please write a casual, relaxed greeting",
+#     }
 
-    return f"{styles.get(style, styles['friendly'])} for someone named {name}."
+#     return f"{styles.get(style, styles['friendly'])} for someone named {name}."
+
+async def normalizeToPixels(viewportSize: dict, normalizedCoord: list)->list:
+    width = viewportSize['width']
+    height = viewportSize['height']
+    x = int(normalizedCoord[0] * width)
+    y = int(normalizedCoord[1] * height)
+    return [x, y]
