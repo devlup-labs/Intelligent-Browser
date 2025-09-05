@@ -212,7 +212,7 @@ Please execute this task using the appropriate MCP tool and provide structured f
 
 # Create server parameters for stdio connection
 server_params = StdioServerParameters(
-    command="E:\\test2\\Intelligent-Browser\\backend\\.venv\\Scripts\\uv.EXE",
+    command="/media/bastard/New Volume/test2/Intelligent-Browser/backend/.venv/bin/uv",
     args=[
         "run",
         "--with",
@@ -225,8 +225,9 @@ server_params = StdioServerParameters(
         "bs4",
         "mcp",
         "run",
-        "E:\\test2\\Intelligent-Browser\\backend\\src\\agents\\server.py"
-    ]
+        "/media/bastard/New Volume/test2/Intelligent-Browser/backend/src/agents/server.py"
+    ],
+    env={"DISPLAY": ":1", **os.environ}  # Use :1 instead of :0
 )
 
 class MCPOpenAIClient:
@@ -550,7 +551,7 @@ async def run_client_session(request: str, api_key: str) -> Dict[str, Any]:
     client = MCPOpenAIClient(api_key)
     return await client.process_user_request(request)
 
-async def runClient(user_request: str):
+def main():
     """Entry point for the client script with proper asyncio handling."""
     
     print("Came to client") 
@@ -565,7 +566,7 @@ async def runClient(user_request: str):
     
     try:
         api_key = os.environ.get("OPENAI_API_KEY")
-        request = user_request
+        request = "go to youtube.com and click the shorts button"
         
         # Run everything in a single asyncio.run call to avoid task mixing
         result = asyncio.run(run_client_session(request, api_key))
@@ -580,6 +581,6 @@ async def runClient(user_request: str):
         logger.error(f"Fatal error: {e}")
         return 1
 
-# if __name__ == "__main__":
-#     exit_code = main()
-#     sys.exit(exit_code)
+if __name__ == "__main__":
+    exit_code = main()
+    sys.exit(exit_code)

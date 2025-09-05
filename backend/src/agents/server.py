@@ -415,7 +415,7 @@ async def StartBrowserSession():
         global page
         global browser
         p = await async_playwright().start()
-        browser = await p.chromium.launch(headless=False, executable_path=r"C:\Users\Harsh\AppData\Local\ms-playwright\chromium-1169\chrome-win\chrome.exe")
+        browser = await p.chromium.launch(headless=False)
         PAGE = await browser.new_page()
         page = PAGE
         return f"Browser initiated successfully"
@@ -482,7 +482,7 @@ async def clickElementTool(ss_name: str, full_page: bool, task: str):
                     cord = json['location']
                     pixelCords = await normalizeToPixels(page.viewport_size, cord)
                     await page.mouse.click(pixelCords[0], pixelCords[1])
-                    # time.sleep(2)>
+                    time.sleep(2)
                     return f"completed task successfully"
                 except Exception as e:
                     print(f"Failed to send image to server: {e}")
