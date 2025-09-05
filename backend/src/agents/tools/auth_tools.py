@@ -11,14 +11,20 @@ import base64
 import sqlite3
 import os
 from dotenv import load_dotenv
-
+from cryptography.fernet import Fernet
 load_dotenv()
 
-DB_NAME = os.getenv("DATABASE_AUTH_AGENT_URL", "auth_agent.db")
+DB_NAME = os.getenv("DATABASE_AUTH_AGENT_URL")
+FERNET_KEY = os.getenv("FERNET_KEY")
+fernet = Fernet(FERNET_KEY)
+
 
 def init_database():
     """Initialize the database with required tables if they don't exist."""
-    conn = sqlite3.connect(DB_NAME)
+    try:
+        conn = sqlite3.connect(DB_NAME)
+    except sqlite3.Error as e:
+        raise RuntimeError(f"❌ Could not connect to database: {e}")
     cursor = conn.cursor()
     
     # Create credentials table
@@ -51,13 +57,13 @@ def init_database():
     
     conn.commit()
     conn.close()
-    print(f"[init_database] Database initialized at: {DB_NAME}")
+    return f"[init_database] Database initialized at: {DB_NAME}"
 
 def get_connection():
     """Get database connection and ensure database is initialized."""
     # Ensure database exists and is initialized
     if not os.path.exists(DB_NAME):
-        print(f"[get_connection] Database file doesn't exist, creating: {DB_NAME}")
+       # print(f"[get_connection] Database file doesn't exist, creating: {DB_NAME}")
         init_database()
     
     try:
@@ -65,7 +71,7 @@ def get_connection():
         conn.row_factory = sqlite3.Row
         return conn
     except sqlite3.Error as e:
-        print(f"[get_connection] Database connection error: {e}")
+      #  print(f"[get_connection] Database connection error: {e}")
         # Try to initialize database if connection fails
         init_database()
         conn = sqlite3.connect(DB_NAME)
@@ -108,7 +114,7 @@ def verify_auth(page: Page) -> bool:
         if isinstance(snapshot, int) and snapshot > 0:
             return True
     except Exception as e:
-        print(f"[verify_auth] Error: {e}")
+      #  print(f"[verify_auth] Error: {e}")
         pass
     return False
 
@@ -129,7 +135,7 @@ def get_token(site_name: str) -> Optional[Dict[str, Optional[str]]]:
             "key_name": row[3]
         }
     except Exception as e:
-        print(f"[get_token] Error: {e}")
+      #  print(f"[get_token] Error: {e}")
         return None
 
 def inject_token_as_cookie(page: Page, url: str, cookie_name: str, token: str) -> bool:
@@ -146,7 +152,7 @@ def inject_token_as_cookie(page: Page, url: str, cookie_name: str, token: str) -
         page.goto(url)
         return verify_auth(page)
     except Exception as e:
-        print(f"[inject_token_as_cookie] Error: {e}")
+      #  print(f"[inject_token_as_cookie] Error: {e}")
         return False
     
 def inject_token_to_localstorage(page: Page, url: str, key_name: str, token: str) -> bool:
@@ -169,7 +175,7 @@ def inject_token_to_localstorage(page: Page, url: str, key_name: str, token: str
         # verify auth (see helper below)
         return verify_auth(page)
     except Exception as e:
-        print(f"[inject_token_to_localstorage] Error: {e}")
+      #  print(f"[inject_token_to_localstorage] Error: {e}")
         return False
 
 def get_credentials(site_name: str) -> Optional[Dict[str, Optional[str]]]:
@@ -197,7 +203,7 @@ def get_credentials(site_name: str) -> Optional[Dict[str, Optional[str]]]:
             "selectors": selectors
         }
     except Exception as e:
-        print(f"[get_credentials] Error: {e}")
+       # print(f"[get_credentials] Error: {e}")
         return None
 
 def save_selectors(site_name: str, selectors: dict):
@@ -214,7 +220,7 @@ def save_selectors(site_name: str, selectors: dict):
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"[save_selectors] Error: {e}")
+       return f"[save_selectors] Error: {e}"
 
 def decode_jwt_exp(jwt_token: str) -> Optional[float]:
     try:
@@ -254,7 +260,7 @@ def save_credentials(site_name: str, username: Optional[str], password: Optional
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"[save_credentials] Error: {e}")
+        return f"[save_credentials] Error: {e}"
 
 def save_token(site_name: str, token: str, exp: Optional[float], storage_type: Optional[str] = None, key_name: Optional[str] = None):
     """Insert or update token for a site. exp is unix timestamp (float)."""
@@ -276,7 +282,7 @@ def save_token(site_name: str, token: str, exp: Optional[float], storage_type: O
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"[save_token] Error: {e}")
+        return f"[save_token] Error: {e}"
 
 class SelectorExtractorInput(BaseModel):
     parsed_html: str = Field(..., description="Parsed HTML with only interactive elements")
@@ -344,16 +350,29 @@ class PlaywrightLoginTool(BaseTool):
             self.page.goto(url)
 
             if selectors.get("username_selector") and credentials.get("username"):
-                self.page.fill(selectors["username_selector"], credentials["username"])
+                username = fernet.decrypt(credentials["username"].encode()).decode()
+                self.page.fill(selectors["username_selector"], username)
+
+        # email
             if selectors.get("email_selector") and credentials.get("email"):
-                self.page.fill(selectors["email_selector"], credentials["email"])
+                email = fernet.decrypt(credentials["email"].encode()).decode()
+                self.page.fill(selectors["email_selector"], email)
+
+        # password
             if selectors.get("password_selector") and credentials.get("password"):
-                self.page.fill(selectors["password_selector"], credentials["password"])
+                password = fernet.decrypt(credentials["password"].encode()).decode()
+                self.page.fill(selectors["password_selector"], password)
+
+        # otp
             if selectors.get("otp_selector") and credentials.get("otp"):
-                self.page.fill(selectors["otp_selector"], credentials["otp"])
+                otp = fernet.decrypt(credentials["otp"].encode()).decode()
+                self.page.fill(selectors["otp_selector"], otp)
 
             if selectors.get("submit_selector"):
-                self.page.click(selectors["submit_selector"])
+                try:
+                    self.page.click("button[type='submit']")
+                except:
+                    self.page.press("input[name='password']", "Enter")
             else:
                 self.page.keyboard.press("Enter")
                 
@@ -361,7 +380,7 @@ class PlaywrightLoginTool(BaseTool):
             self.page.wait_for_timeout(4000)
             return True
         except Exception as e:
-            print(f"[PlaywrightLoginTool] Error: {e}")
+         #   print(f"[PlaywrightLoginTool] Error: {e}")
             return False
 
 # -------------------------
@@ -388,11 +407,11 @@ class SmartLoginTool(BaseTool):
             init_database()
             
             site_key = hostname_from_url(url)
-            print(f"[smart_login] site_key={site_key}")
+           # print(f"[smart_login] site_key={site_key}")
             
             # 1) Token-first
             token_record = get_token(site_key)
-            print(f"[smart_login] token_record={token_record}")
+           # print(f"[smart_login] token_record={token_record}")
             if token_record:
                 token = token_record.get('token')
                 exp = token_record.get('exp')
@@ -400,7 +419,7 @@ class SmartLoginTool(BaseTool):
                 storage_type = token_record.get('storage_type') or 'localStorage'
 
                 if exp and time.time() < float(exp):
-                    print(f"[smart_login] trying to inject token into {storage_type} with key {key_name}")
+                  #  print(f"[smart_login] trying to inject token into {storage_type} with key {key_name}")
                     try:
                         injected_ok = False
                         if storage_type == 'cookie':
@@ -409,12 +428,12 @@ class SmartLoginTool(BaseTool):
                             injected_ok = inject_token_to_localstorage(self.page, url, key_name, token)
 
                         if injected_ok:
-                            print("[smart_login] token injection verified — session authenticated")
+                          #  print("[smart_login] token injection verified — session authenticated")
                             return {"jwt": token, "source": "db_token"}
-                        else:
-                            print("[smart_login] token injection did NOT create an authenticated session; falling back")
+                        # else:
+                        #     print("[smart_login] token injection did NOT create an authenticated session; falling back")
                     except Exception as e:
-                        print(f"[smart_login] token injection error: {e}; falling back to credentials")
+                       return f"[smart_login] token injection error: {e}; falling back to credentials"
                         # continue to credentials path
 
             # 2) Credentials-second
@@ -423,7 +442,7 @@ class SmartLoginTool(BaseTool):
             if creds and creds.get('selectors'):
                 selectors = creds.get('selectors')
 
-            print("[smart_login] falling back to credential-based login")
+          #  print("[smart_login] falling back to credential-based login")
             # If selectors not saved, extract them from parsed_html
             if not selectors:
                 selectors = SelectorExtractorTool()._run(parsed_html)
@@ -458,7 +477,7 @@ class SmartLoginTool(BaseTool):
             return {"result": "no_stored_credentials_available", "message": "Please provide credentials for this site"}
 
         except Exception as e:
-            print(f"[smart_login] Error: {e}")
+          #  print(f"[smart_login] Error: {e}")
             return {"error": str(e), "result": "smart_login_failed"}
 
     def _find_jwt_anywhere(self, page: Page):

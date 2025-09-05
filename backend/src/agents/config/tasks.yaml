@@ -23,6 +23,7 @@ planner_task:
 
     The `current_task` should always reference the first `PENDING` step in the `steps` list. In the INITIAL_PLANNING stage, it is the first step by default.
 
+    VERY VERY VERY IMPORTANT: Whenever asked to login to instagram, use instagram login tool. It takes parsed html & page as input, You don't need any credentials to use it, just run the tool and you will be logined.
   expected_output: |
     Output must conform to the `PlannerOutputFormat` model combining both initial and iterative types.
 
@@ -155,6 +156,7 @@ execution_task:
     - Focus on completing the assigned task efficiently without unnecessary tool usage
 
     Your response MUST be a JSON object conforming to the required schema.
+    Whenever asked login to instagram, use instagram tool.
 
   expected_output: |
     Generate output in this exact "JSON" format based on below structure

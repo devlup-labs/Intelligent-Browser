@@ -109,3 +109,9 @@ scroll_page_tool:
     Provide the direction to scroll ('up' or 'down').
     Example: {"direction": "down"},{"direction": "up"}.
     Don't give any input other than up or down.
+
+instagram_login_tool:
+  name: "Instagram Login Tool"
+  description: >-
+    A tool to log into Instagram by performing a minimal, focused set of actions on the Instagram login page.
+    Use this when you need to authenticate a user on Instagram without running a full browser automation script.

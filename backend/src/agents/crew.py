@@ -5,8 +5,8 @@ import json
 import yaml
 from crewai.project import CrewBase, agent, crew, task
 import logging
-from src.agents.tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TakeScreenshotTool, ClickElementTool, FillInputTool
-from src.agents.tools.auth_tools import SmartLoginTool
+from src.agents.tools.browser_tools import GoToPageTool,FetchAndCleanHTMLTool, GoBackTool, ReloadPageTool, GetCurrentURL, HoverElementTool, SelectDropdownTool, ScrollPageTool, DoubleClickTool, TextDeleteTool, TakeScreenshotTool, ClickElementTool, FillInputTool, InstagramLoginTool
+#from src.agents.tools.demo import SmartLoginTool
 from src.agents.utils.browser_manager import BrowserManager
 from playwright.async_api import Page # pyright: ignore[reportMissingImports]
 from typing import List, Optional, Literal
@@ -23,7 +23,7 @@ try:
     llm = LLM(
         model="gemini/gemini-2.5-flash-lite",
         api_key=os.getenv("GEMINI_API_KEY"),
-        temperature=0.7,
+        temperature=0.8,
     )
     logger.info("CrewAI LLM initialized successfully")
 except Exception as e:
@@ -172,12 +172,16 @@ class MasterCrew:
                 description=self.tools_config['fill_input_tool']['description'],
                 page=self.page
             )
-            self.smart_login_tool = SmartLoginTool(
-                name=self.tools_config['smart_login_tool']['name'],
-                description=self.tools_config['smart_login_tool']['description'],
-                page=self.page
-            )
 
+            self.instagram_login_tool = InstagramLoginTool(
+                name=self.tools_config['instagram_login_tool']['name'],
+                description=self.tools_config['instagram_login_tool']['description'],
+            )
+            # self.smart_login_tool = SmartLoginTool(
+            #     name=self.tools_config['smart_login_tool']['name'],
+            #     description=self.tools_config['smart_login_tool']['description'],
+            #     page=self.page
+            # )
 
         except (FileNotFoundError, yaml.YAMLError) as e:
             logger.error(f"Failed to load or parse configuration: {e}")
@@ -209,7 +213,7 @@ class MasterCrew:
                    self.text_delete_tool,
                    self.click_element_tool,
                    self.fill_input_tool,
-                   self.smart_login_tool,],
+                   self.instagram_login_tool,],
             output_json=ExecutorOutputFormat,
             llm=llm,
             verbose=True,
