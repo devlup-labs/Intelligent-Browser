@@ -9,6 +9,7 @@ from src.middleware.get_current_user import getCurrentUser
 from src.agents.main import run
 from src.utils.connection_manager import manager
 import nest_asyncio
+from src.agents.client import runClient
 
 nest_asyncio.apply()
 
@@ -29,13 +30,17 @@ def get_db():
 async def websocket_endpoint(websocket:WebSocket):
     print("Came to correct place")
     await manager.connect(websocket)
-
+    print("Came to correct here")
     try:
         while True:
+            print("Inside while true")
             user_request=await websocket.receive_text()
-            await run(user_request)
+            print("after user request")
+            await runClient(user_request)
+            print("after run client")
 
     except WebSocketDisconnect:
+        print("disconnecting websocket")
         manager.disconnect(websocket)
 
         

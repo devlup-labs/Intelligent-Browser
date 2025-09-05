@@ -550,9 +550,10 @@ async def run_client_session(request: str, api_key: str) -> Dict[str, Any]:
     client = MCPOpenAIClient(api_key)
     return await client.process_user_request(request)
 
-def main():
+async def runClient(user_request: str):
     """Entry point for the client script with proper asyncio handling."""
     
+    print("Came to client") 
     # Setup signal handling for graceful shutdown
     def signal_handler(signum, frame):
         logger.info(f"Received signal {signum}, shutting down...")
@@ -564,7 +565,7 @@ def main():
     
     try:
         api_key = os.environ.get("OPENAI_API_KEY")
-        request = "go to youtube and click the shorts button"
+        request = user_request
         
         # Run everything in a single asyncio.run call to avoid task mixing
         result = asyncio.run(run_client_session(request, api_key))
@@ -579,6 +580,6 @@ def main():
         logger.error(f"Fatal error: {e}")
         return 1
 
-if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
+# if __name__ == "__main__":
+#     exit_code = main()
+#     sys.exit(exit_code)
