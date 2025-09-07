@@ -13,22 +13,61 @@ from mcp.shared.context import RequestContext
 import logging
 import sys
 import signal
+from src.utils.connection_manager import manager
 from contextlib import asynccontextmanager
-
+from pydantic import BaseModel, RootModel
+import os
+import json
+from enum import Enum
+import logging
+from typing import List, Optional, Literal
+from typing import Union
+from src.agents.event_listerner.basic_listerner import basic_listener
 detailed_tools = []
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Pydantic models for structured responses
-class PlannerOutput(BaseModel):
-    status: str  # "IN_PROGRESS" or "SUCCESS" or "FAILED"
-    current_task: str
-    use_tool: Optional[str] = None
-    reasoning: str
-    next_steps: List[str] = []
+class StepStatus(str, Enum):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    PARTIAL_FAILURE = "PARTIAL_FAILURE"
 
+class Step(BaseModel):
+    step_id: int
+    task_name: str  
+    status: StepStatus = StepStatus.PENDING
+
+class InitialPlanning(BaseModel):
+    session_type: Literal["INITIAL_PLANNING"]
+    status: str
+    overall_task_name: str
+    master_thought: str
+    estimated_steps: str
+    use_tool: str
+    steps: List[Step]
+    current_task: Step
+class IterativePlanning(BaseModel):
+    session_type: Literal["ITERATIVE_PLANNING"]
+    status: str
+    overall_task_name: str
+    progress_analysis: str
+    adaptation_reasoning: str
+    steps: List[Step]
+    use_tool: str
+    current_task: Step
+    remaining_work: str
+
+# Unified Planner Output Format - Fixed IterativePlanning
+class PlannerOutput(RootModel[Union[IterativePlanning, InitialPlanning]]):
+    def __getattr__(self, name):
+        """Allow direct attribute access on the root model"""
+        return getattr(self.root, name)
+
+# Pydantic models for structured responses
 class ExecutorOutput(BaseModel):
     task_completed: bool
     result: str
@@ -56,12 +95,60 @@ planner:
 
   output_format: |
     Always respond in JSON with the following fields:
+    
+    FOR INITIAL PLANNING:
     {
+      "session_type": "INITIAL_PLANNING",
       "status": "IN_PROGRESS" | "SUCCESS" | "FAILED",
-      "current_task": "Clear description of the next task to execute",
+      "overall_task_name": "[Descriptive name for the complete user request]",
+      "master_thought": "[Your analysis of the user request and overall approach strategy]",
+      "estimated_steps": "[Number estimate as STRING, e.g. '3' not 3]",
       "use_tool": "Which tool/agent should be used for this task",
-      "reasoning": "Why this task is needed and how it fits the overall workflow",
-      "next_steps": ["list", "of", "remaining", "planned", "tasks"]
+      "steps": [
+        {
+          "step_id": 1,
+          "task_name": "[Simple name for step 1]",
+          "status": "PENDING"
+        },
+        {
+          "step_id": 2,
+          "task_name": "[Simple name for step 2]",
+          "status": "PENDING"
+        }
+      ],
+      "current_task": {
+        "step_id": 1,
+        "task_name": "[Simple name matching first step]",
+        "status": "PENDING"
+      }
+    }
+    
+    FOR ITERATIVE PLANNING:
+    {
+      "session_type": "ITERATIVE_PLANNING",
+      "status": "IN_PROGRESS" | "SUCCESS" | "FAILED",
+      "overall_task_name": "[Same as initial planning]",
+      "progress_analysis": "[Analysis of what has been completed based on executor feedback]",
+      "adaptation_reasoning": "[How you're adapting based on executor results and suggestions]",
+      "use_tool": "Which tool/agent should be used for this task",
+      "steps": [
+        {
+          "step_id": 1,
+          "task_name": "[Simple name for step 1]",
+          "status": "SUCCESS"
+        },
+        {
+          "step_id": 2,
+          "task_name": "[Simple name for step 2]",
+          "status": "PENDING"
+        }
+      ],
+      "current_task": {
+        "step_id": 2,
+        "task_name": "[Simple name matching next pending step]",
+        "status": "PENDING"
+      },
+      "remaining_work": "[Brief description of what still needs to be done, or 'Task completed successfully' if complete]"
     }
 
   rules: |
@@ -212,7 +299,7 @@ Please execute this task using the appropriate MCP tool and provide structured f
 
 # Create server parameters for stdio connection
 server_params = StdioServerParameters(
-    command="/media/bastard/New Volume/test2/Intelligent-Browser/backend/.venv/bin/uv",
+    command="C:\\Users\\Ashok Jain\\Desktop\\intellibrowse_final\\Intelligent-Browser\\backend\\.venv\\Scripts\\uv.exe",
     args=[
         "run",
         "--with",
@@ -225,9 +312,8 @@ server_params = StdioServerParameters(
         "bs4",
         "mcp",
         "run",
-        "/media/bastard/New Volume/test2/Intelligent-Browser/backend/src/agents/server.py"
-    ],
-    env={"DISPLAY": ":1", **os.environ}  # Use :1 instead of :0
+        "C:\\Users\\Ashok Jain\\Desktop\\intellibrowse_final\\Intelligent-Browser\\backend\\src\\agents\\server.py"
+    ]
 )
 
 class MCPOpenAIClient:
@@ -320,24 +406,17 @@ class MCPOpenAIClient:
         messages = [
             {"role": "system", "content": PLANNER_SYSTEM_PROMPT},
             {"role": "user", "content": f"""
-User Request: {user_request}
+                User Request: {user_request}
 
-Available Tools: {json.dumps(self.available_tools, indent=2)}
-Available Resources: {json.dumps(self.available_resources, indent=2)}
+                Available Tools: {json.dumps(self.available_tools, indent=2)}
+                Available Resources: {json.dumps(self.available_resources, indent=2)}
 
-Execution History: {json.dumps(execution_history or [], indent=2)}
-Give response in JSON format only.
-"""}
+                Execution History: {json.dumps(execution_history or [], indent=2)}
+                Give response in JSON format only.
+                """}
         ]
-        # if iteration ==1:
-        #     messages = messages
-        # else:
-        #     messages.pop(0)
         
         try:
-            # logger.info(iteration)
-            # logger.info(type(iteration))
-            # logger.info(messages)
             response = await self.openai_client.chat.completions.create(
                 model="gpt-4o",
                 messages=messages,
@@ -346,19 +425,48 @@ Give response in JSON format only.
             )
             logger.info(f"OpenAI planner response: {response.choices[0].message.content}")
             planner_data = json.loads(response.choices[0].message.content)
+
             logger.info(f"Planner response: {json.dumps(planner_data, indent=2)}")
+            logger.info(type(planner_data))
+            if(type(planner_data["current_task"])==None):
+                planner_data["current_task"]={
+                "step_id": "1",
+                "task_name": "All task Completed",
+                "status": "SUCCESS"
+            }
+            if(type(planner_data["use_tool"])==None):
+                planner_data["use_tool"]="No Tool usage required"
+                
             return PlannerOutput(**planner_data)
             
         except Exception as e:
             logger.error(f"Error in planner call: {e}")
-            return PlannerOutput(
-                status="FAILED",
-                current_task="",
-                use_tool = "",
-                reasoning=f"Failed to get planner response: {e}"
-            )
+            # Return a fallback response that matches your expected format
+            # session_type: Literal["ITERATIVE_PLANNING"]
+            # status: str
+            # overall_task_name: str
+            # progress_analysis: str
+            # adaptation_reasoning: str
+            # steps: List[Step]
+            # use_tool: str
+            # current_task: Step
+            # remaining_work: str
+            fallback_data = {
+            "session_type": "ITERATIVE_PLANNING",
+            "status": "FAILED",
+            "overall_task_name": "Failed Task",
+            "progress_analysis": f"Failed to get planner response: {e}",
+            "use_tool": "",
+            "steps": [],
+            "current_task": {
+                "step_id": 0,
+                "task_name": "Error",
+                "status": "FAILED"
+            }
+            }
+            return PlannerOutput(**fallback_data)
     
-    async def call_openai_executor(self, task: str, session: ClientSession, use_tool: str, iteration: int, context: str = "") -> ExecutorOutput:
+    async def call_openai_executor(self, task: Step, session: ClientSession, use_tool: str, iteration: int, context: str = "") -> ExecutorOutput:
         """Call OpenAI with executor system prompt"""
         
         # Create tools in the new OpenAI tools format (not functions)
@@ -379,19 +487,18 @@ Give response in JSON format only.
             }
             tools.append(tool_def)
         
+        # Convert Step object to string for the task description
+        task_description = task.task_name if hasattr(task, 'task_name') else str(task)
+        
         messages = [
             {"role": "system", "content": EXECUTOR_SYSTEM_PROMPT},
             {"role": "user", "content": f"""
-Task to Execute: {task}
+Task to Execute: {task_description}
 Use Tool: {use_tool}
 Available Tools: {json.dumps([{'name': t['name'], 'description': t['description']} for t in detailed_tools], indent=2)}
 Give Response in JSON format only.
 """}
         ]
-        # if iteration==1:
-        #     messages = messages
-        # else:   
-        #     messages.pop(0)
         
         try:
             response = await self.openai_client.chat.completions.create(
@@ -476,14 +583,51 @@ Give Response in JSON format only.
                 while iteration < max_iterations:
                     iteration += 1
                     logger.info(f"📋 Planning Iteration {iteration}")
-                    # logger.info(type(iteration))
                     
                     # Get plan from planner
                     planner_output = await self.call_openai_planner(user_request, iteration, execution_history)
-                    logger.info(f"Status: {planner_output.status}")
-                    logger.info(f"Current Task: {planner_output.current_task}")
-                    logger.info(f"Use_tool: {planner_output.use_tool}")
-                    logger.info(f"Reasoning: {planner_output.reasoning}")
+                    
+                    # Access the session_type from the root model
+                    session_type = planner_output.session_type
+                    
+                    if session_type == "INITIAL_PLANNING":
+                        if planner_output.current_task is None:
+                            planner_output.current_task = {}
+                        workflow_data = {
+                            "session_type": "INITIAL_PLANNING",
+                            "status": planner_output.status,
+                            "overall_task_name": planner_output.overall_task_name,
+                            "master_thought": planner_output.master_thought,
+                            "estimated_steps": planner_output.estimated_steps,
+                            "steps": [step.dict() for step in planner_output.steps],  # Convert to dict
+                            "current_task": (
+                                planner_output.current_task.dict() if hasattr(planner_output.current_task, "dict")
+                                else planner_output.current_task
+                            ),
+                        }
+                        
+                        asyncio.create_task(manager.broadcast(json.dumps(workflow_data)))
+ 
+                    elif session_type == "ITERATIVE_PLANNING":
+                        # Send structured JSON data for workflow updates
+                        if planner_output.current_task is None:
+                            planner_output.current_task = {}
+
+                        workflow_data = {
+                            "session_type": "ITERATIVE_PLANNING",
+                            "status": planner_output.status,
+                            "overall_task_name": planner_output.overall_task_name,
+                            "progress_analysis": planner_output.progress_analysis,
+                            "adaptation_reasoning": planner_output.adaptation_reasoning,
+                            "steps": [step.dict() for step in planner_output.steps],  # Convert to dict
+                            "current_task": (
+                                planner_output.current_task.dict() if hasattr(planner_output.current_task, "dict")
+                                else planner_output.current_task
+                            ),   
+                            "remaining_work": planner_output.remaining_work
+                        }
+                        
+                        asyncio.create_task(manager.broadcast(json.dumps(workflow_data)))
                     
                     # Check if we're done
                     if planner_output.status == "SUCCESS":
@@ -497,7 +641,7 @@ Give Response in JSON format only.
                         logger.info("❌ Task failed!")
                         return {
                             "status": "failed",
-                            "reason": planner_output.reasoning,
+                            "reason": getattr(planner_output, 'reasoning', 'Unknown failure'),
                             "iterations": iteration,
                             "execution_history": execution_history
                         }
@@ -520,7 +664,7 @@ Give Response in JSON format only.
                     # Add to history
                     execution_history.append({
                         "iteration": iteration,
-                        "planned_task": planner_output.current_task,
+                        "planned_task": planner_output.current_task.dict(),  # Convert to dict
                         "execution_result": {
                             "completed": executor_output.task_completed,
                             "result": executor_output.result,
@@ -580,7 +724,3 @@ def main():
     except Exception as e:
         logger.error(f"Fatal error: {e}")
         return 1
-
-if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
