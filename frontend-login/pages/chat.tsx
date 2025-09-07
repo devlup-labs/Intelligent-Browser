@@ -102,12 +102,7 @@ export default function Home() {
         isCompleted: false
       });
       
-    //   const workflowMessage: Message = {
-    //     text: `Starting work    flow: ${data.overall_task_name}`,
-    //     type: "workflow",
-    //     workflowData: data
-    //   };
-    //   setMessages((prev) => [...prev, workflowMessage]);
+    // 
       
     } else if (session_type === "ITERATIVE_PLANNING") {
       setWorkflowState(prev => ({
