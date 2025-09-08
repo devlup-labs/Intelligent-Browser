@@ -212,7 +212,7 @@ Please execute this task using the appropriate MCP tool and provide structured f
 
 # Create server parameters for stdio connection
 server_params = StdioServerParameters(
-    command="/media/bastard/New Volume/test2/Intelligent-Browser/backend/.venv/bin/uv",
+    command="E:\\test2\\Intelligent-Browser\\backend\\.venv\\Scripts\\uv.exe",
     args=[
         "run",
         "--with",
@@ -225,14 +225,15 @@ server_params = StdioServerParameters(
         "bs4",
         "mcp",
         "run",
-        "/media/bastard/New Volume/test2/Intelligent-Browser/backend/src/agents/server.py"
-    ],
-    env={"DISPLAY": ":1", **os.environ}  # Use :1 instead of :0
+        "E:\\test2\\Intelligent-Browser\\backend\\src\\agents\\server.py"
+    ]
+    # env={"DISPLAY": ":1", **os.environ}  # Use :1 instead of :0
 )
 
 class MCPOpenAIClient:
     def __init__(self, openai_api_key: str):
-        self.openai_client = AsyncOpenAI(api_key=openai_api_key)
+        self.openai_planner_client = AsyncOpenAI(api_key=openai_api_key)
+        self.openai_executor_client = AsyncOpenAI(api_key=openai_api_key)
         self.available_tools = []
         self.available_resources = []
 
@@ -338,7 +339,7 @@ Give response in JSON format only.
             # logger.info(iteration)
             # logger.info(type(iteration))
             # logger.info(messages)
-            response = await self.openai_client.chat.completions.create(
+            response = await self.openai_planner_client.chat.completions.create(
                 model="gpt-4o",
                 messages=messages,
                 response_format={"type": "json_object"},
@@ -394,7 +395,7 @@ Give Response in JSON format only.
         #     messages.pop(0)
         
         try:
-            response = await self.openai_client.chat.completions.create(
+            response = await self.openai_executor_client.chat.completions.create(
                 model="gpt-4o",
                 messages=messages,
                 tools=tools if tools else None,
@@ -551,7 +552,7 @@ async def run_client_session(request: str, api_key: str) -> Dict[str, Any]:
     client = MCPOpenAIClient(api_key)
     return await client.process_user_request(request)
 
-def main():
+async def runClient(user_request: str):
     """Entry point for the client script with proper asyncio handling."""
     
     print("Came to client") 
@@ -566,10 +567,10 @@ def main():
     
     try:
         api_key = os.environ.get("OPENAI_API_KEY")
-        request = "go to youtube.com and click the shorts button"
+        request = user_request
         
         # Run everything in a single asyncio.run call to avoid task mixing
-        result = asyncio.run(run_client_session(request, api_key))
+        result = await run_client_session(request, api_key)
         
         print(f"\n📊 Final Result: {json.dumps(result, indent=2)}")
         return 0 if result.get("status") == "success" else 1
@@ -581,6 +582,6 @@ def main():
         logger.error(f"Fatal error: {e}")
         return 1
 
-if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
+# if __name__ == "__main__":
+#     exit_code = main()
+#     sys.exit(exit_code)
