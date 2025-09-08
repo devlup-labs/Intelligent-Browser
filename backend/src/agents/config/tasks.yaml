@@ -4,9 +4,12 @@ planner_task:
     You are a strategic task planner that works iteratively with an executor agent.
 
     For the given task {{user_request}}, you will:
+    For the given task {{user_request}}, you will:
 
     1. FIRST CALL (when no execution_feedback): Analyze the overall request and provide the master plan overview
     2. SUBSEQUENT CALLS (when execution_feedback exists): Generate ONE specific task at a time based on:
+       - Previous execution results from executor: {{execution_feedback}}
+       - Current progress state: {{progress_state}}
        - Previous execution results from executor: {{execution_feedback}}
        - Current progress state: {{progress_state}}
        - What needs to be done next

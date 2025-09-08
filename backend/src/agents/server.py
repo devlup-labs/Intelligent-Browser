@@ -527,23 +527,23 @@ async def clickElementTool(ss_name: str, full_page: bool, task: str, text_to_ent
     except Exception as e:
         return f"An unexpected error occurred while taking screenshot: {e}"
     
-# @mcp.tool()
-# async def ClickElementTool(selector: str, wait_for_navigation: bool = False):
-#     """Click on an element specified by a CSS selector"""
-#     global page
-#     try:
-#         element = await page.query_selector(selector)
-#         if not element:
-#             return f"Element with selector '{selector}' not found."
+@mcp.tool()
+async def ClickElementTool(selector: str, wait_for_navigation: bool = False):
+    """Click on an element specified by a CSS selector"""
+    global page
+    try:
+        element = await page.query_selector(selector)
+        if not element:
+            return f"Element with selector '{selector}' not found."
         
-#         await element.click()
-#         if wait_for_navigation:
-#             await page.wait_for_navigation(wait_until='load')
-#         return f"Clicked on element with selector '{selector}'."
-#     except PlaywrightError as e:
-#         return f"Click action failed due to browser error: {e}"
-#     except TimeoutError as e:
-#         return f"Click action timed out: {e}"
+        await element.click()
+        if wait_for_navigation:
+            await page.wait_for_navigation(wait_until='load')
+        return f"Clicked on element with selector '{selector}'."
+    except PlaywrightError as e:
+        return f"Click action failed due to browser error: {e}"
+    except TimeoutError as e:
+        return f"Click action timed out: {e}"
     
 @mcp.tool()
 async def FillInputTool(selector: str, value: str):
