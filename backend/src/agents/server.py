@@ -234,7 +234,7 @@ def _process_element(element, result: List, element_positions: Dict, innermost_i
         if text:
             result.append(text)
         return
-
+    
     # Skip non-element nodes
     if not hasattr(element, 'name') or not element.name:
         return
