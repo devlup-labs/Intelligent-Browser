@@ -25,7 +25,7 @@ export default function Home() {
 
   useEffect(()=>
   {
-      socket.current=new WebSocket("ws://localhost:8000/ws")
+      socket.current=new WebSocket("ws://localhost:8001/ws")
 
       socket.current.onopen = () => {
         console.log("✅ Connected to WebSocket");
@@ -49,7 +49,7 @@ export default function Home() {
     if (message.trim() !== "") {
       try {
         const token = localStorage.getItem("token")
-        const response = await axios.post("http://localhost:8000/chat", request_data,
+        const response = await axios.post("http://localhost:5000/chat", request_data,
           {
             headers: {
               Authorization: `Bearer ${token}`, //  Send token in header
@@ -87,7 +87,7 @@ export default function Home() {
     const token = localStorage.getItem("token");
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8000/auth/verify_jwt", {
+      const res = await axios.get("http://localhost:5000/auth/verify_jwt", {
         headers: {
           Authorization: `Bearer ${token}`
         }

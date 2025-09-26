@@ -54,7 +54,7 @@ export default function Home() {
   ];
 
   useEffect(() => {
-    socket.current = new WebSocket("ws://localhost:8000/websocket");
+    socket.current = new WebSocket("ws://localhost:5000/websocket");
 
     socket.current.onopen = () => {
       console.log("✅ Connected to WebSocket");
@@ -209,7 +209,7 @@ export default function Home() {
       const token = localStorage.getItem("token");
       setLoading(true);
       try {
-        const res = await axios.get("http://localhost:8000/auth/verify_jwt", {
+        const res = await axios.get("http://localhost:5000/auth/verify_jwt", {
           headers: {
             Authorization: `Bearer ${token}`
           }
