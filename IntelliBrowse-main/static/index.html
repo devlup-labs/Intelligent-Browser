@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliBrowse — Agentic Browser</title>
+    <meta name="description" content="Describe tasks in plain English and the agent completes them by controlling a real browser.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── Reset & Base ─────────────────────────── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #16161f;
+            --bg-card-hover: #1c1c28;
+            --bg-input: #1a1a26;
+            --border: #2a2a3a;
+            --border-focus: #6366f1;
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888a0;
+            --text-muted: #555568;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --success: #22c55e;
+            --success-dim: rgba(34, 197, 94, 0.15);
+            --error: #ef4444;
+            --error-dim: rgba(239, 68, 68, 0.15);
+            --warning: #f59e0b;
+            --warning-dim: rgba(245, 158, 11, 0.15);
+            --info: #3b82f6;
+            --info-dim: rgba(59, 130, 246, 0.15);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --font: 'Inter', -apple-system, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Background Effect ────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+            animation: bgDrift 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes bgDrift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-2%, 2%); }
+        }
+
+        /* ── Layout ───────────────────────────────── */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* ── Header ───────────────────────────────── */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 24px var(--accent-glow);
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 15px;
+            font-weight: 400;
+        }
+
+        /* ── Input Section ────────────────────────── */
+        .input-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 32px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-section:focus-within {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .task-input {
+            flex: 1;
+            padding: 14px 18px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .task-input::placeholder { color: var(--text-muted); }
+        .task-input:focus { border-color: var(--accent); }
+
+        .run-btn {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.3s, opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        .run-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+
+        .run-btn:active:not(:disabled) { transform: translateY(0); }
+        .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .stop-btn {
+            padding: 14px 20px;
+            background: var(--error-dim);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+            transition: background 0.2s;
+        }
+
+        .stop-btn:hover { background: rgba(239, 68, 68, 0.25); }
+
+        /* ── Status Bar ───────────────────────────── */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .status-dot.connected { background: var(--success); box-shadow: 0 0 8px rgba(34, 197, 94, 0.5); }
+        .status-dot.running { background: var(--accent); animation: pulse 1.5s infinite; }
+        .status-dot.error { background: var(--error); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .status-text { color: var(--text-secondary); flex: 1; }
+        .status-meta { color: var(--text-muted); font-family: var(--mono); font-size: 12px; }
+
+        /* ── Steps Feed ───────────────────────────── */
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .step-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px 20px;
+            animation: slideIn 0.3s ease-out;
+            transition: border-color 0.2s;
+        }
+
+        .step-card:hover { border-color: rgba(99, 102, 241, 0.3); }
+
+        .step-card.observe { border-left: 3px solid var(--info); }
+        .step-card.plan { border-left: 3px solid var(--accent); }
+        .step-card.act { border-left: 3px solid var(--warning); }
+        .step-card.evaluate { border-left: 3px solid var(--success); }
+        .step-card.complete { border-left: 3px solid var(--success); background: var(--success-dim); }
+        .step-card.error { border-left: 3px solid var(--error); background: var(--error-dim); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .step-badge {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: var(--mono);
+        }
+
+        .step-badge.observe { background: var(--info-dim); color: var(--info); }
+        .step-badge.plan { background: var(--accent-glow); color: var(--accent); }
+        .step-badge.act { background: var(--warning-dim); color: var(--warning); }
+        .step-badge.evaluate { background: var(--success-dim); color: var(--success); }
+        .step-badge.complete { background: var(--success-dim); color: var(--success); }
+        .step-badge.error { background: var(--error-dim); color: var(--error); }
+
+        .step-model {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--mono);
+            margin-left: auto;
+        }
+
+        .step-content {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .step-content code {
+            font-family: var(--mono);
+            font-size: 13px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .step-content .action-detail {
+            margin-top: 6px;
+            padding: 8px 12px;
+            background: var(--bg-input);
+            border-radius: 6px;
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        /* ── Result Card ──────────────────────────── */
+        .result-card {
+            margin-top: 16px;
+            padding: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--success);
+            border-radius: var(--radius);
+            animation: slideIn 0.4s ease-out;
+        }
+
+        .result-card.failed { border-color: var(--error); }
+
+        .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .result-body {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ── Examples ─────────────────────────────── */
+        .examples {
+            margin-top: 24px;
+        }
+
+        .examples-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+        }
+
+        .example-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .example-chip {
+            padding: 8px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-chip:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+            background: var(--bg-card-hover);
+        }
+
+        /* ── Responsive ───────────────────────────── */
+        @media (max-width: 600px) {
+            .input-row { flex-direction: column; }
+            .run-btn, .stop-btn { width: 100%; }
+            .container { padding: 24px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🧠</div>
+                <span class="logo-text">IntelliBrowse</span>
+            </div>
+            <p class="tagline">Describe a task in plain English — the agent does the rest</p>
+        </header>
+
+        <!-- Input -->
+        <section class="input-section" id="input-section">
+            <label class="input-label" for="task-input">What should the browser do?</label>
+            <div class="input-row">
+                <input
+                    type="text"
+                    id="task-input"
+                    class="task-input"
+                    placeholder="e.g. Go to github.com and find trending Python repos"
+                    autocomplete="off"
+                >
+                <button class="run-btn" id="run-btn" onclick="startTask()">Run Task</button>
+                <button class="stop-btn" id="stop-btn" onclick="stopTask()">Stop</button>
+            </div>
+        </section>
+
+        <!-- Status -->
+        <div class="status-bar" id="status-bar" style="display: none;">
+            <div class="status-dot" id="status-dot"></div>
+            <span class="status-text" id="status-text">Ready</span>
+            <span class="status-meta" id="status-meta"></span>
+        </div>
+
+        <!-- Steps Feed -->
+        <div class="steps-container" id="steps-container"></div>
+
+        <!-- Examples -->
+        <div class="examples" id="examples-section">
+            <div class="examples-label">Try an example</div>
+            <div class="example-chips">
+                <div class="example-chip" onclick="fillExample(this)">Go to example.com and get the page title</div>
+                <div class="example-chip" onclick="fillExample(this)">Search Google for 'best mechanical keyboards 2025'</div>
+                <div class="example-chip" onclick="fillExample(this)">Go to github.com/trending and list the top 5 repos</div>
+                <div class="example-chip" onclick="fillExample(this)">Go to Wikipedia and find the population of Tokyo</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('task-input');
+        const runBtn = document.getElementById('run-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusBar = document.getElementById('status-bar');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const statusMeta = document.getElementById('status-meta');
+        const stepsContainer = document.getElementById('steps-container');
+        const examplesSection = document.getElementById('examples-section');
+
+        let ws = null;
+        let stepCount = 0;
+        let startTime = null;
+
+        function fillExample(el) {
+            input.value = el.textContent;
+            input.focus();
+        }
+
+        // Enter key to run
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !runBtn.disabled) startTask();
+        });
+
+        function startTask() {
+            const task = input.value.trim();
+            if (!task) return;
+
+            // Reset UI
+            stepsContainer.innerHTML = '';
+            stepCount = 0;
+            startTime = Date.now();
+            examplesSection.style.display = 'none';
+            statusBar.style.display = 'flex';
+            runBtn.disabled = true;
+            runBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+            setStatus('running', 'Connecting...');
+
+            // Connect WebSocket
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${location.host}/ws`);
+
+            ws.onopen = () => {
+                setStatus('running', 'Planning task...');
+                ws.send(JSON.stringify({ task }));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleStep(data);
+            };
+
+            ws.onerror = () => {
+                setStatus('error', 'Connection failed');
+                resetControls();
+            };
+
+            ws.onclose = () => {
+                if (statusDot.classList.contains('running')) {
+                    setStatus('error', 'Connection lost');
+                }
+                resetControls();
+            };
+        }
+
+        function stopTask() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            setStatus('error', 'Stopped by user');
+            resetControls();
+        }
+
+        function resetControls() {
+            runBtn.disabled = false;
+            runBtn.style.display = 'block';
+            stopBtn.style.display = 'none';
+        }
+
+        function setStatus(type, text, meta) {
+            statusDot.className = 'status-dot ' + type;
+            statusText.textContent = text;
+            statusMeta.textContent = meta || '';
+        }
+
+        function elapsed() {
+            if (!startTime) return '';
+            return ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+        }
+
+        function handleStep(data) {
+            // Final result
+            if (data.type === 'complete') {
+                const success = data.status === 'done';
+                const card = document.createElement('div');
+                card.className = `result-card ${success ? '' : 'failed'}`;
+                card.innerHTML = `
+                    <div class="result-title">${success ? '✅ Task Complete' : '❌ Task Failed'}</div>
+                    <div class="result-body">${escapeHtml(data.final_result || data.result || 'No result')}</div>
+                `;
+                stepsContainer.appendChild(card);
+                setStatus(success ? 'connected' : 'error',
+                         success ? 'Completed' : 'Failed',
+                         `${stepCount} steps · ${elapsed()}`);
+                resetControls();
+                return;
+            }
+
+            // Error
+            if (data.type === 'error') {
+                addStepCard('error', 'Error', data.error);
+                setStatus('error', 'Error', elapsed());
+                resetControls();
+                return;
+            }
+
+            // Determine node type
+            const node = data.node || '';
+            if (!node) return;
+
+            stepCount++;
+            let content = '';
+
+            switch (node) {
+                case 'observe':
+                    const preview = data.page_state_preview || '';
+                    const url = extractUrl(preview);
+                    content = url ? `Observing page: <code>${escapeHtml(url)}</code>` : 'Reading page state...';
+                    if (data.screenshot_b64) content += ' 📸 (screenshot taken)';
+                    setStatus('running', `Step ${Math.ceil(stepCount/4)} — Observing...`, elapsed());
+                    break;
+
+                case 'plan':
+                    const action = data.action_json;
+                    if (action) {
+                        content = `<strong>${escapeHtml(action.reasoning || '')}</strong>`;
+                        content += `<div class="action-detail">→ ${escapeHtml(action.action || '?')}`;
+                        if (action.target != null) content += `(${escapeHtml(String(action.target))}`;
+                        if (action.value) content += `, "${escapeHtml(action.value)}"`;
+                        if (action.target != null) content += ')';
+                        content += '</div>';
+                    }
+                    setStatus('running', `Step ${Math.ceil(stepCount/4)} — Planning...`, elapsed());
+                    break;
+
+                case 'act':
+                    const result = data.action_result || '';
+                    const isFail = result.includes('FAILED');
+                    content = isFail
+                        ? `❌ ${escapeHtml(result)}`
+                        : `✅ ${escapeHtml(result)}`;
+                    setStatus('running', `Step ${Math.ceil(stepCount/4)} — Acting...`, elapsed());
+                    break;
+
+                case 'evaluate':
+                    const step = data.current_step || 0;
+                    const failures = data.consecutive_failures || 0;
+                    const status = data.status || 'running';
+                    content = `Step ${step} evaluated`;
+                    if (failures > 0) content += ` · ⚠️ ${failures} consecutive failure(s)`;
+                    if (status === 'failed') content += ` · 🛑 ${escapeHtml(data.final_result || '')}`;
+                    setStatus('running', `Step ${step} — Evaluating...`, elapsed());
+                    break;
+
+                default:
+                    content = JSON.stringify(data);
+            }
+
+            if (content) {
+                addStepCard(node, node.charAt(0).toUpperCase() + node.slice(1), content, data.model_used);
+            }
+        }
+
+        function addStepCard(type, badge, content, model) {
+            const card = document.createElement('div');
+            card.className = `step-card ${type}`;
+            card.innerHTML = `
+                <div class="step-header">
+                    <span class="step-badge ${type}">${escapeHtml(badge)}</span>
+                    ${model ? `<span class="step-model">via ${escapeHtml(model)}</span>` : ''}
+                </div>
+                <div class="step-content">${content}</div>
+            `;
+            stepsContainer.appendChild(card);
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function extractUrl(text) {
+            const match = text.match(/URL:\s*(.+)/);
+            return match ? match[1].trim() : '';
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

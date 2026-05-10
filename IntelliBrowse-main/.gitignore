@@ -1,0 +1,62 @@
+# ── Python ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ── Virtual environments ────────────────────────────────
+myenv/
+venv/
+.venv/
+env/
+uv.lock
+# ── Distribution / packaging ────────────────────────────
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+
+# ── IDE / Editor ────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# ── Environment variables ──────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Testing / Coverage ─────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# ── Mypy / type-checking ───────────────────────────────
+.mypy_cache/
+.pytype/
+
+# ── Jupyter ─────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Runtime / logs ──────────────────────────────────────
+*.log
+logs/
+screenshots/
+
+# ── Playwright ──────────────────────────────────────────
+test-results/
+playwright-report/
+
+# ── OS files ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Memory store (runtime data) ────────────────────────
+memory_store/
