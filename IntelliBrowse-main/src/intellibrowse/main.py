@@ -6,19 +6,20 @@ Endpoints:
   WS /ws — stream step-by-step updates in real time
 """
 
-import asyncio
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, Header, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from intellibrowse.auth import extract_bearer_token, verify_google_id_token
 from intellibrowse.browser.manager import BrowserManager
 from intellibrowse.agent.graph import run_agent
+from intellibrowse.config import settings
 from intellibrowse.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -32,7 +33,6 @@ async def lifespan(app: FastAPI):
     logger.info("IntelliBrowse starting up")
     yield
     logger.info("IntelliBrowse shutting down")
-
 
 # ── App ───────────────────────────────────────────────────────────────
 
@@ -80,10 +80,45 @@ class TaskResponse(BaseModel):
     steps_taken: int
 
 
+class AuthRequest(BaseModel):
+    id_token: str
+
+
+class AuthResponse(BaseModel):
+    status: str
+    email: str | None = None
+    name: str | None = None
+    picture: str | None = None
+
+
+async def require_auth(authorization: str | None = Header(default=None)) -> dict:
+    """Validate a Google ID token from the Authorization header."""
+    token = extract_bearer_token(authorization)
+    return await verify_google_id_token(token)
+
+
+@app.get("/auth/config")
+async def auth_config():
+    """Expose frontend OAuth configuration."""
+    return {"google_client_id": settings.google_client_id}
+
+
+@app.post("/auth/google", response_model=AuthResponse)
+async def auth_google(request: AuthRequest):
+    """Validate Google ID token and return basic profile info."""
+    claims = await verify_google_id_token(request.id_token)
+    return AuthResponse(
+        status="ok",
+        email=claims.get("email"),
+        name=claims.get("name"),
+        picture=claims.get("picture"),
+    )
+
+
 # ── HTTP endpoint (synchronous, returns when done) ────────────────────
 
 @app.post("/task", response_model=TaskResponse)
-async def submit_task(request: TaskRequest):
+async def submit_task(request: TaskRequest, _user: dict = Depends(require_auth)):
     """Run a task and return the result when complete."""
     logger.info("received task: %s", request.task)
 
@@ -104,6 +139,22 @@ async def submit_task(request: TaskRequest):
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     """Stream step-by-step agent updates over WebSocket."""
+    token = ws.query_params.get("token")
+    if not token:
+        auth_header = ws.headers.get("authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[len("Bearer "):].strip()
+
+    if not token:
+        await ws.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    try:
+        await verify_google_id_token(token)
+    except Exception:
+        await ws.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await ws.accept()
     logger.info("WebSocket connected")
 
