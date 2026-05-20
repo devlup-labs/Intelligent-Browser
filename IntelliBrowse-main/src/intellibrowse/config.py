@@ -112,6 +112,7 @@ class Settings:
 
     # Memory
     memory_store_path: str = field(default_factory=lambda: os.getenv("MEMORY_STORE_PATH", "memory_store/domains.json"))
+    vault_store_path: str = "vault/credentials.enc"
 
     # Auth
     google_client_id: str = field(default_factory=lambda: os.getenv("GOOGLE_CLIENT_ID", ""))

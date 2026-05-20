@@ -6,7 +6,9 @@ Element resolution uses JavaScript to re-query interactive elements by index,
 matching the same selector used in observation.py.
 """
 
+import asyncio
 import os
+import random
 import time
 
 from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
@@ -113,6 +115,22 @@ _FOCUS_AND_CLEAR_JS = """
 }
 """.replace('__SELECTORS__', _INTERACTIVE_SELECTORS)
 
+# JavaScript to return the nth visible interactive element handle
+_GET_ELEMENT_HANDLE_JS = """
+(index) => {
+    const selectors = '__SELECTORS__';
+    const all = document.querySelectorAll(selectors);
+    const visible = Array.from(all).filter(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return false;
+        const style = window.getComputedStyle(el);
+        return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+    });
+    if (index < 0 || index >= visible.length) return null;
+    return visible[index];
+}
+""".replace('__SELECTORS__', _INTERACTIVE_SELECTORS)
+
 
 async def click(page: Page, index: int) -> str:
     """
@@ -123,17 +141,23 @@ async def click(page: Page, index: int) -> str:
     all frameworks (React, Vue, Angular, etc.)
     """
     try:
-        # Get element position via JS
-        result = await page.evaluate(_GET_CLICK_TARGET_JS, index)
-        if not result or not result.get("ok"):
-            error = result.get("error", "unknown") if result else "element not found"
-            return f"FAILED: {error}"
+        element_handle = await page.evaluate_handle(_GET_ELEMENT_HANDLE_JS, index)
+        element = element_handle.as_element()
+        if element is None:
+            return f"FAILED: element [{index}] not found"
 
-        # Small delay after scroll
+        await element.scroll_into_view_if_needed()
         await page.wait_for_timeout(200)
 
-        # Native Playwright mouse click at element center
-        await page.mouse.click(result["x"], result["y"])
+        box = await element.bounding_box()
+        if box:
+            x = box["x"] + box["width"] * random.uniform(0.2, 0.8)
+            y = box["y"] + box["height"] * random.uniform(0.2, 0.8)
+            await page.mouse.move(x, y)
+            await asyncio.sleep(random.uniform(0.05, 0.15))
+            await page.mouse.click(x, y)
+        else:
+            await element.click()
 
         # Wait for navigation/DOM changes
         try:
@@ -142,7 +166,9 @@ async def click(page: Page, index: int) -> str:
             pass
         await page.wait_for_timeout(500)
 
-        return f'Clicked {result["role"]} "{result["name"]}" — now at {page.url}'
+        info = await page.evaluate(_GET_ELEMENT_JS, index)
+        label = f'{info["role"]} "{info["name"]}"' if info else f"element [{index}]"
+        return f"Clicked {label} — now at {page.url}"
     except Exception as e:
         return f"FAILED: click error: {e}"
 
@@ -156,19 +182,25 @@ async def type_text(page: Page, index: int, text: str) -> str:
     JavaScript-driven UI that listens for keydown/keyup events.
     """
     try:
-        # Focus and clear the element via JS
-        result = await page.evaluate(_FOCUS_AND_CLEAR_JS, index)
-        if not result or not result.get("ok"):
-            error = result.get("error", "unknown") if result else "element not found"
-            return f"FAILED: {error}"
+        element_handle = await page.evaluate_handle(_GET_ELEMENT_HANDLE_JS, index)
+        element = element_handle.as_element()
+        if element is None:
+            return f"FAILED: element [{index}] not found"
 
-        # Type with real keystrokes — this triggers autocomplete/dropdown
-        await page.keyboard.type(text, delay=50)
+        await element.click()
+        await asyncio.sleep(random.uniform(0.15, 0.35))
 
-        # Wait for autocomplete/dropdown to appear
+        await page.keyboard.press("Control+a")
+        await asyncio.sleep(random.uniform(0.05, 0.12))
+        await page.keyboard.press("Delete")
+
+        await element.type(text, delay=random.uniform(80, 160))
+
         await page.wait_for_timeout(800)
 
-        return f'Typed "{text}" into "{result["name"]}" (dropdown may have appeared — check page state)'
+        info = await page.evaluate(_GET_ELEMENT_JS, index)
+        name = info["name"] if info else ""
+        return f'Typed "{text}" into "{name}" (dropdown may have appeared — check page state)'
     except Exception as e:
         return f"FAILED: type error: {e}"
 

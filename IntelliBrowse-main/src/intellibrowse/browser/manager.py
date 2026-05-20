@@ -8,6 +8,7 @@ Usage:
 """
 
 from playwright.async_api import async_playwright, Browser, BrowserContext, Page, Playwright
+from playwright_stealth import Stealth
 
 from intellibrowse.config import settings
 from intellibrowse.utils.logger import get_logger
@@ -23,23 +24,34 @@ class BrowserManager:
         self._browser: Browser | None = None
         self._context: BrowserContext | None = None
         self._page: Page | None = None
+        self._stealth: Stealth | None = None
 
     async def start(self) -> "BrowserManager":
         """Launch browser and create a persistent context."""
         logger.info("launching chromium (headless=%s)", settings.headless)
         self._playwright = await async_playwright().start()
-        self._browser = await self._playwright.chromium.launch(headless=settings.headless)
+        self._browser = await self._playwright.chromium.launch(
+            headless=settings.headless,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+            ],
+        )
         self._context = await self._browser.new_context(
-            viewport={
-                "width": settings.viewport_width,
-                "height": settings.viewport_height,
-            },
+            viewport={"width": 1280, "height": 720},
+            locale="en-US",
+            timezone_id="America/New_York",
             user_agent=(
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
             ),
+            java_script_enabled=True,
+            accept_downloads=True,
         )
         self._page = await self._context.new_page()
+        self._stealth = Stealth()
+        await self._stealth.apply_stealth_async(self._page)
         logger.info("browser ready — viewport %dx%d", settings.viewport_width, settings.viewport_height)
         return self
 
@@ -65,6 +77,9 @@ class BrowserManager:
         if self._context is None:
             raise RuntimeError("browser not started — call start() first")
         self._page = await self._context.new_page()
+        if self._stealth is None:
+            self._stealth = Stealth()
+        await self._stealth.apply_stealth_async(self._page)
         return self._page
 
     # Async context manager support

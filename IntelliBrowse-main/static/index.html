@@ -577,6 +577,83 @@
         </div>
       </section>
 
+      <!-- Saved Accounts Panel -->
+      <div
+        id="accounts-panel"
+        style="margin-top: 1.5rem; border-top: 1px solid #e5e7eb; padding-top: 1rem;"
+      >
+        <button
+          id="accounts-toggle"
+          style="font-size: 0.875rem; font-weight: 500; color: #6b7280; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;"
+        >
+          🔐 Saved accounts <span id="accounts-chevron">▸</span>
+        </button>
+        <div id="accounts-body" style="display: none; margin-top: 0.75rem;">
+          <!-- Platform list -->
+          <div
+            id="platform-list"
+            style="margin-bottom: 0.75rem; font-size: 0.8125rem; color: #374151;"
+          ></div>
+          <!-- Add credential form -->
+          <div
+            style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 320px;"
+          >
+            <input
+              id="cred-platform"
+              placeholder="Platform (e.g. linkedin)"
+              style="padding: 0.4rem 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;"
+              autocomplete="off"
+            />
+            <input
+              id="cred-username"
+              placeholder="Username / email"
+              style="padding: 0.4rem 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;"
+              autocomplete="off"
+            />
+            <input
+              id="cred-password"
+              type="password"
+              placeholder="Password"
+              style="padding: 0.4rem 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;"
+              autocomplete="new-password"
+            />
+            <button
+              id="cred-save-btn"
+              style="padding: 0.4rem 0.8rem; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer;"
+            >
+              Save
+            </button>
+          </div>
+          <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;">
+            Credentials are encrypted and stored only on this device. They are
+            never sent to any server or LLM.
+          </p>
+          <!-- MFA prompt (hidden by default) -->
+          <div
+            id="mfa-prompt"
+            style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fef3c7; border-radius: 8px; border: 1px solid #fcd34d;"
+          >
+            <p
+              id="mfa-text"
+              style="font-size: 0.875rem; color: #92400e; margin: 0 0 0.5rem 0;"
+            ></p>
+            <div style="display: flex; gap: 0.5rem;">
+              <input
+                id="mfa-input"
+                placeholder="Verification code"
+                style="flex: 1; padding: 0.4rem 0.6rem; border: 1px solid #fcd34d; border-radius: 6px; font-size: 0.875rem;"
+              />
+              <button
+                id="mfa-submit-btn"
+                style="padding: 0.4rem 0.8rem; background: #d97706; color: #fff; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer;"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Status -->
       <div class="status-bar" id="status-bar" style="display: none">
         <div class="status-dot" id="status-dot"></div>
@@ -815,6 +892,11 @@
           return;
         }
 
+        if (data.type === "mfa_required") {
+          showMFAPrompt(data.platform, data.prompt);
+          return;
+        }
+
         // Determine node type
         const node = data.node || "";
         if (!node) return;
@@ -917,6 +999,103 @@
         const div = document.createElement("div");
         div.textContent = str;
         return div.innerHTML;
+      }
+
+      // -- Saved accounts panel -------------------------------------------------
+
+      async function loadPlatforms() {
+        if (!idToken) return;
+        try {
+          const resp = await fetch("/vault/platforms", {
+            headers: { Authorization: `Bearer ${idToken}` },
+          });
+          if (!resp.ok) return;
+          const data = await resp.json();
+          const list = document.getElementById("platform-list");
+          if (data.platforms.length === 0) {
+            list.textContent = "No accounts saved yet.";
+          } else {
+            list.innerHTML = data.platforms
+              .map(
+                (p) =>
+                  `<span style="display:inline-flex;align-items:center;gap:0.3rem;margin-right:0.5rem;background:#f3f4f6;padding:0.2rem 0.5rem;border-radius:4px;">
+          ${p}
+          <button onclick="deleteCredential('${p}')" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:0.75rem;">✕</button>
+        </span>`,
+              )
+              .join("");
+          }
+        } catch (e) {
+          console.error("Failed to load platforms", e);
+        }
+      }
+
+      async function deleteCredential(platform) {
+        if (!confirm(`Remove saved account for ${platform}?`)) return;
+        await fetch(`/vault/credentials/${platform}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        await loadPlatforms();
+      }
+
+      document
+        .getElementById("accounts-toggle")
+        .addEventListener("click", () => {
+          const body = document.getElementById("accounts-body");
+          const chevron = document.getElementById("accounts-chevron");
+          const open = body.style.display !== "none";
+          body.style.display = open ? "none" : "block";
+          chevron.textContent = open ? "▸" : "▾";
+          if (!open) loadPlatforms();
+        });
+
+      document
+        .getElementById("cred-save-btn")
+        .addEventListener("click", async () => {
+          const platform = document
+            .getElementById("cred-platform")
+            .value.trim()
+            .toLowerCase();
+          const username = document.getElementById("cred-username").value.trim();
+          const password = document.getElementById("cred-password").value;
+          if (!platform || !username || !password) {
+            alert("Please fill in all fields.");
+            return;
+          }
+          try {
+            const resp = await fetch("/vault/credentials", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({ platform, username, password }),
+            });
+            if (!resp.ok) throw new Error(await resp.text());
+            document.getElementById("cred-platform").value = "";
+            document.getElementById("cred-username").value = "";
+            document.getElementById("cred-password").value = "";
+            await loadPlatforms();
+          } catch (e) {
+            alert("Failed to save credential: " + e.message);
+          }
+        });
+
+      // -- MFA prompt -----------------------------------------------------------
+
+      function showMFAPrompt(platform, prompt) {
+        const el = document.getElementById("mfa-prompt");
+        document.getElementById("mfa-text").textContent = `${platform}: ${prompt}`;
+        el.style.display = "block";
+        document.getElementById("mfa-input").focus();
+        document.getElementById("accounts-body").style.display = "block";
+        document.getElementById("accounts-chevron").textContent = "▾";
+      }
+
+      function hideMFAPrompt() {
+        document.getElementById("mfa-prompt").style.display = "none";
+        document.getElementById("mfa-input").value = "";
       }
 
       window.addEventListener("load", initAuth);

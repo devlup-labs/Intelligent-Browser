@@ -99,7 +99,6 @@ _EXTRACT_JS = """
                 name: name.replace(/\\n/g, ' ').replace(/\\s+/g, ' ').trim(),
                 type: el.getAttribute('type') || '',
                 href: tag === 'a' ? (el.getAttribute('href') || '').substring(0, 120) : '',
-                value: el.value || '',
                 checked: el.checked || false,
                 disabled: el.disabled || false,
                 focused: document.activeElement === el,
@@ -198,8 +197,6 @@ async def get_page_state(page: Page) -> tuple[str, list[dict]]:
                 extras.append("CHECKED")
             if elem.get("disabled"):
                 extras.append("DISABLED")
-            if elem.get("value"):
-                extras.append(f'value="{elem["value"][:50]}"')
             if elem.get("href"):
                 extras.append(f'href="{elem["href"][:60]}"')
 

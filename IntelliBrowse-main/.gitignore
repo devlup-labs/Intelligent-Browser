@@ -60,3 +60,5 @@ Thumbs.db
 
 # ── Memory store (runtime data) ────────────────────────
 memory_store/
+*.enc
+*.vault_secret

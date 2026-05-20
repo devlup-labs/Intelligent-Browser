@@ -10,6 +10,7 @@ dependencies = [
     "langchain-core>=0.3.0",
     # Browser automation
     "playwright>=1.52.0",
+    "playwright-stealth>=1.0.6",
     # LLM providers (all OpenAI SDK compatible)
     "openai>=1.70.0",
     # Web framework
@@ -22,6 +23,7 @@ dependencies = [
     "python-dotenv>=1.1.0",
     # Auth
     "google-auth>=2.29.0",
+    "cryptography>=42.0.0",
 ]
 
 [project.optional-dependencies]

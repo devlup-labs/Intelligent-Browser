@@ -5,21 +5,51 @@ Only ONE action per step — this prevents the executor boundary violation
 that plagued the previous project.
 """
 
-from playwright.async_api import Page
+from langchain_core.runnables import RunnableConfig
 
 from intellibrowse.agent.state import AgentState
+from intellibrowse.auth.agent import authenticate
 from intellibrowse.browser.actions import execute_action
 from intellibrowse.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-async def act(state: AgentState, page: Page) -> dict:
+async def act(state: AgentState, config: RunnableConfig) -> dict:
     """
     Execute the planned action. Returns partial state update.
     """
     step = state.get("current_step", 0)
     action_json = state.get("action_json", {})
+    page = config["configurable"]["page"]
+    on_step = config["configurable"].get("on_step")
+
+    # -- Auth action interception -------------------------------------------------
+    if action_json.get("action") == "authenticate":
+        platform = (action_json.get("platform") or action_json.get("target") or "").lower().strip()
+
+        async def mfa_callback(platform: str, prompt: str) -> str:
+            """Ask the user for MFA code via WebSocket."""
+            if on_step:
+                await on_step({
+                    "type": "mfa_required",
+                    "platform": platform,
+                    "prompt": prompt,
+                })
+            return ""
+
+        result = await authenticate(platform, page, mfa_callback=mfa_callback)
+        action_result = (
+            f"Login to {platform}: {result['status']}"
+            if result["status"] in ("ok", "no_credentials", "unsupported")
+            else f"Login to {platform} failed: {result.get('message', result['status'])}"
+        )
+        return {
+            **state,
+            "action_result": action_result,
+            "last_action_str": f"authenticate({platform})",
+        }
+    # -- End auth interception ----------------------------------------------------
 
     action_name = action_json.get("action", "")
     target = action_json.get("target")

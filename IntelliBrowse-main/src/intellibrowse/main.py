@@ -16,7 +16,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from intellibrowse.auth import extract_bearer_token, verify_google_id_token
+from intellibrowse.auth import vault_router
+from intellibrowse.auth.google import extract_bearer_token, verify_google_id_token
 from intellibrowse.browser.manager import BrowserManager
 from intellibrowse.agent.graph import run_agent
 from intellibrowse.config import settings
@@ -95,6 +96,9 @@ async def require_auth(authorization: str | None = Header(default=None)) -> dict
     """Validate a Google ID token from the Authorization header."""
     token = extract_bearer_token(authorization)
     return await verify_google_id_token(token)
+
+
+app.include_router(vault_router, dependencies=[Depends(require_auth)])
 
 
 @app.get("/auth/config")

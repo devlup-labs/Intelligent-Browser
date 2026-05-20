@@ -1,11 +1,36 @@
 """
-Prompt templates — all system and user prompts in one place.
+Prompt templates - all system and user prompts in one place.
 
 Architecture:
-  - Subtask planner: generates ONE subtask at a time given the main task + progress
-  - Action planner: decides the next browser action to complete the current subtask
-  - Both demand JSON-only output
+    - Subtask planner: generates ONE subtask at a time given the main task + progress
+    - Action planner: decides the next browser action to complete the current subtask
+    - Both demand JSON-only output
 """
+
+from intellibrowse.auth.vault import list_platforms
+
+
+def _assert_no_credentials_in_messages(messages: list[dict]) -> None:
+    """
+    Paranoia check: scan all message content for stored PASSWORD values.
+    Raises RuntimeError if any password is found - this is a bug, not a user error.
+    """
+    from intellibrowse.auth.vault import _read_vault
+
+    vault_data = _read_vault()
+    passwords = set()
+    for entry in vault_data.values():
+        passwords.add(entry.get("password", ""))
+    passwords.discard("")
+
+    for msg in messages:
+        content = str(msg.get("content", ""))
+        for secret in passwords:
+            if secret in content:
+                raise RuntimeError(
+                    "SECURITY VIOLATION: password detected in LLM prompt. "
+                    "This is a bug - investigate immediately."
+                )
 
 SYSTEM_PROMPT = """You are an autonomous browser agent. You complete tasks by controlling a web browser.
 
@@ -29,6 +54,7 @@ AVAILABLE ACTIONS:
 - select_option(target=<index>, value="option") — Select from dropdown
 - screenshot() — Take and save a screenshot of the current page
 - wait(value="2") — Wait for page to settle (seconds)
+- authenticate(target="<platform>") — Log in using stored credentials. Use target for the platform name (e.g. "gmail", "linkedin").
 - done(value="subtask result description") — Current subtask complete
 
 CHOOSING ELEMENTS:
@@ -137,6 +163,17 @@ def build_step_messages(
         for fa in failed_actions[-5:]:
             parts.append(f"  ❌ {fa}")
 
+    available_platforms = list_platforms()
+    if available_platforms:
+        parts.append(
+            "\n## Authentication\n"
+            f"Stored credentials available for: {', '.join(available_platforms)}.\n"
+            "To log in to a platform, use:\n"
+            '  {"reasoning": "need to log in", "action": "authenticate", "target": "<platform_name>", "value": null}\n'
+            f"Replace <platform_name> with exactly one of: {', '.join(available_platforms)}.\n"
+            "Never ask the user for passwords — just emit the authenticate action."
+        )
+
     parts.append(f"\n## Current Page\n{page_state}")
 
     user_content: str | list = "\n".join(parts)
@@ -152,4 +189,5 @@ def build_step_messages(
         ]
 
     messages.append({"role": "user", "content": user_content})
+    _assert_no_credentials_in_messages(messages)
     return messages

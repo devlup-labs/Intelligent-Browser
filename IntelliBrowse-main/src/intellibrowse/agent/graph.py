@@ -56,8 +56,8 @@ def build_graph(page: Page) -> StateGraph:
     async def _plan(state):
         return await plan(state, page)
 
-    async def _act(state):
-        return await act(state, page)
+    async def _act(state, config):
+        return await act(state, config)
 
     async def _evaluate(state):
         return await evaluate(state, page)
@@ -143,7 +143,8 @@ async def run_agent(task: str, page: Page, on_step=None) -> dict:
 
     # Run the graph
     final_state = None
-    async for state in app.astream(initial_state):
+    config = {"configurable": {"page": page, "on_step": on_step}}
+    async for state in app.astream(initial_state, config=config):
         for node_name, node_output in state.items():
             if isinstance(node_output, dict):
                 if on_step:
